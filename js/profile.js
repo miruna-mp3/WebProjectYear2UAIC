@@ -41,7 +41,26 @@ function loadFriendRequests(){
     ul.innerHTML = '<li>No friend requests at the moment.</li>';
 }
 
+function loadNumber(){
+    fetch('../database/getQueries.php',{
+        method: 'POST'
+    })
+        .then(res => res.json())
+        .then(queryNum => {
+            const div = document.getElementById('numberQueries');
+            div.textContent = queryNum['query_count'];
+        });
+}
+
 function loadQueries(){
+    fetch('../database/getQueries.php',{
+        method: 'POST'
+    })
+        .then(res => res.json())
+        .then(queryNum => {
+            const div = document.getElementById('numberQueries');
+            div.textContent = queryNum;
+        });
     fetch('../database/getQueries.php')
         .then(res => res.json())
         .then(queries => {

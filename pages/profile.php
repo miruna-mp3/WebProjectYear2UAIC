@@ -105,7 +105,10 @@
             </div>
         
             <div class="panel" id="queries-panel" style="display:none;">
-                <h2>Saved Queries</h2>
+                <div style="display: flex; justify-content:center;">
+                    <h2>Saved Queries:</h2>
+                    <div id="numberQueries" style="margin: 3px 0 0 12px; font-family: 'Segoe UI', Arial, sans-serif; font-size=1.25em; font-weight:400;"></div>
+                </div>
                 <ul id="queriesList">
                 </ul>
             </div>
