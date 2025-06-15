@@ -1,21 +1,12 @@
-const form = document.getElementById('registerForm');
+const form = document.getElementById('loginForm');
 const messageDiv = document.getElementById('message');
 
 form.addEventListener('submit', function (e) {
     e.preventDefault();
 
-    const password = form.password.value;
-    const password2 = form.password2.value;
-
-    if (password !== password2) {
-        messageDiv.textContent = "Passwords do not match!";
-        messageDiv.style.color = "red";
-        return;
-    }
-
     const formData = new FormData(form);
 
-    fetch('../auth/register.php', {
+    fetch(form.action, {
         method: 'POST',
         body: formData
     })
@@ -24,11 +15,11 @@ form.addEventListener('submit', function (e) {
         messageDiv.textContent = data.message;
         messageDiv.style.color = data.success ? "green" : "red";
         if (data.success) {
-            window.location.href = 'login.html';
+            window.location.href = 'home';
         }
     })
     .catch(() => {
-        messageDiv.textContent = "Registration failed, please try again.";
+        messageDiv.textContent = "Sign in failed, please try again.";
         messageDiv.style.color = "red";
     });
 });

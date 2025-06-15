@@ -358,12 +358,42 @@ function generateJSON() {
     output.style.display = 'block';
 }
 
+// function saveQuery(){
+//     const messageDiv = document.getElementById('response');
+//     updateDataModel();
+//     const formData = new FormData();
+//     formData.append('jsonData', JSON.stringify(dataModel, null, 2));
+//     fetch('../database/queriesAndResults.php', {
+//         method: 'POST',
+//         body: formData
+//     })
+//     .then(r => r.json())
+//     .then(data => {
+//         messageDiv.textContent = data.message;
+//         messageDiv.style.color = data.success ? "green" : "red";
+//     })
+//     .catch(error => {
+//         messageDiv.textContent = "Error: " + error;
+//         messageDiv.style.color = "red";
+//     });
+
+// }
+
+function clearScope(){
+    document.getElementById('root-scope').innerHTML = '<div class=\"scope-label\">Test Scope</div><div class=\"drop-placeholder\"></div>';
+    document.getElementById('json-output').innerHTML = '';
+    document.getElementById('json-output').style.display = 'none';
+}
+
+// document.getElementById('root-scope').innerHTML += '<div class="drop-placeholder"></div>'; //nu stiu ce e asta
+
+// Unchanged except update AJAX URL if you move to MVC endpoint:
 function saveQuery(){
     const messageDiv = document.getElementById('response');
     updateDataModel();
     const formData = new FormData();
     formData.append('jsonData', JSON.stringify(dataModel, null, 2));
-    fetch('../database/queriesAndResults.php', {
+    fetch('/index.php?page=query&action=save', {
         method: 'POST',
         body: formData
     })
@@ -376,13 +406,4 @@ function saveQuery(){
         messageDiv.textContent = "Error: " + error;
         messageDiv.style.color = "red";
     });
-
 }
-
-function clearScope(){
-    document.getElementById('root-scope').innerHTML = '<div class=\"scope-label\">Test Scope</div><div class=\"drop-placeholder\"></div>';
-    document.getElementById('json-output').innerHTML = '';
-    document.getElementById('json-output').style.display = 'none';
-}
-
-// document.getElementById('root-scope').innerHTML += '<div class="drop-placeholder"></div>'; //nu stiu ce e asta
