@@ -40,6 +40,7 @@ const moduleTemplates = {
         lengthVar: '',
         min: 1,
         max: 100,
+        sortType: 'none',
         visible: true,
         separator: 'space'
     },
@@ -189,6 +190,17 @@ function generateModuleHTML(moduleData) {
             <div class="module-controls">
                 <button class="name-btn" onclick="toggleParameterPanel('${moduleData.id}')">${moduleData.name}</button>
                 <button class="type-btn" onclick="showTimesVariable('${moduleData.id}')">${moduleData.timesVar || 'no variable'}</button>
+                <button class="visibility-btn ${visibilityClass}" onclick="toggleVisibility('${moduleData.id}')"></button>
+                <button class="separator-btn" style="display: ${separatorDisplay}" onclick="cycleSeparator('${moduleData.id}')">${moduleData.separator}</button>
+                <button class="delete-btn" onclick="deleteModule('${moduleData.id}')">×</button>
+            </div>
+        `;
+    } else if (moduleData.type === 'RandomArray') {
+        controlsHTML = `
+            <div class="module-controls">
+                <button class="name-btn" onclick="toggleParameterPanel('${moduleData.id}')">${moduleData.name}</button>
+                <button class="type-btn" onclick="cycleDataType('${moduleData.id}')">${moduleData.dataType}</button>
+                <button class="sort-btn" onclick="cycleSortType('${moduleData.id}')">${moduleData.sortType || 'none'}</button>
                 <button class="visibility-btn ${visibilityClass}" onclick="toggleVisibility('${moduleData.id}')"></button>
                 <button class="separator-btn" style="display: ${separatorDisplay}" onclick="cycleSeparator('${moduleData.id}')">${moduleData.separator}</button>
                 <button class="delete-btn" onclick="deleteModule('${moduleData.id}')">×</button>
@@ -413,6 +425,22 @@ function cycleSeparator(moduleId) {
     updateDataModel();
 }
 
+function cycleSortType(moduleId) {
+    const moduleData = findModuleById(moduleId);
+    if (!moduleData || moduleData.type !== 'RandomArray') return;
+
+    const sortTypes = ['none', 'asc', 'desc'];
+    const currentIndex = sortTypes.indexOf(moduleData.sortType);
+    const nextIndex = (currentIndex + 1) % sortTypes.length;
+    moduleData.sortType = sortTypes[nextIndex];
+    
+    // Update button display
+    const moduleElement = document.querySelector(`[data-module-id="${moduleId}"]`);
+    moduleElement.querySelector('.sort-btn').textContent = moduleData.sortType;
+    
+    updateDataModel();
+}
+
 function deleteModule(moduleId) {
     const element = document.querySelector(`[data-module-id="${moduleId}"]`);
     if (element) {
@@ -570,6 +598,7 @@ function extractModuleData(element) {
                 cleanData.lengthVar = moduleData.lengthVar;
                 cleanData.min = moduleData.min;
                 cleanData.max = moduleData.max;
+                cleanData.sortType = moduleData.sortType;
                 break;
             case 'Repeat':
                 cleanData.timesVar = moduleData.timesVar;
