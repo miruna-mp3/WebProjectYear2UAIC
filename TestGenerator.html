@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modular Test-Input Generator</title>
+    <style>
+    </style>
+    <link rel="stylesheet" href="generator.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>modular test-input generator</h1>
+        </div>
+        
+        <div class="main">
+            <div class="palette">
+                <div class="palette-item" draggable="true" data-type="FixedVariable">
+                    <div class="type">fixed variable</div>
+                    <div class="desc">single literal value (int, double, or char)</div>
+                </div>
+                
+                <div class="palette-item" draggable="true" data-type="RandomVariable">
+                    <div class="type">random variable</div>
+                    <div class="desc">random scalar from [min, max] range</div>
+                </div>
+                
+                <div class="palette-item" draggable="true" data-type="Array">
+                    <div class="type">random array</div>
+                    <div class="desc">array of random values with variable length</div>
+                </div>
+                
+                <div class="palette-item" draggable="true" data-type="Repeat">
+                    <div class="type">repeat</div>
+                    <div class="desc">loop container referencing integer variable</div>
+                </div>
+            </div>
+            
+            <div class="workspace">
+                <div class="controls">
+                    <button class="btn" onclick="generateJSON()">generate json</button>
+                    <button class="btn" onclick="clearAll()">clear all</button>
+                </div>
+                
+                <div class="scope" id="root-scope" data-scope="root">
+                    <div class="scope-label">root scope</div>
+                </div>
+                
+                <div class="json-output" id="json-output"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating parameter panel template -->
+    <div class="floating-panel" id="param-panel">
+        <button class="close-panel" onclick="closeParameterPanel()">×</button>
+        <h4 id="panel-title">parameters</h4>
+        <div id="panel-content"></div>
+    </div>
+
+    <script src="generator.js"></script>
+</body>
+</html>

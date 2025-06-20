@@ -1,0 +1,409 @@
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #4a5568, #2d3748);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .main {
+            display: flex;
+            min-height: 700px;
+        }
+
+        .palette {
+            width: 280px;
+            background: #f7fafc;
+            border-right: 1px solid #e2e8f0;
+            padding: 20px;
+            flex-shrink: 0;
+        }
+
+        .palette h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .palette-item {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 12px;
+            cursor: grab;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .palette-item:hover {
+            border-color: #4299e1;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.15);
+        }
+
+        .palette-item:active {
+            cursor: grabbing;
+        }
+
+        .palette-item .type {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        .palette-item .desc {
+            font-size: 12px;
+            color: #718096;
+            line-height: 1.4;
+        }
+
+        .workspace {
+            flex: 1;
+            padding: 20px;
+            background: #fafafa;
+            position: relative;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #4299e1, #3182ce);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            margin: 0 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+        }
+
+        .scope {
+            background: white;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            min-height: 120px;
+            padding: 20px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .scope.drag-over {
+            border-color: #4299e1;
+            background: #ebf8ff;
+        }
+
+        .scope-label {
+            position: absolute;
+            top: -12px;
+            left: 15px;
+            background: white;
+            padding: 4px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #4a5568;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .module-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: grab;
+            transition: all 0.2s ease;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .module-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-1px);
+        }
+
+        .module-card.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .module-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .name-btn {
+            background: #edf2f7;
+            color: #2d3748;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.2s ease;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .name-btn:hover, .name-btn.active {
+            background: #4299e1;
+            color: white;
+        }
+
+        .type-btn {
+            background: #e6fffa;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            min-width: 45px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .type-btn:hover {
+            background: #6ee7b7;
+            color: white;
+        }
+
+        .visibility-btn {
+            width: 20px;
+            height: 20px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .visibility-btn.visible {
+            background: #68d391;
+        }
+
+        .visibility-btn.hidden {
+            background: #fc8181;
+        }
+
+        .separator-btn {
+            background: #fef5e7;
+            color: #744210;
+            border: 1px solid #f6e05e;
+            padding: 2px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: 500;
+            min-width: 50px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .separator-btn:hover {
+            background: #f6e05e;
+            color: white;
+        }
+
+        .delete-btn {
+            background: #fed7d7;
+            color: #c53030;
+            border: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: auto;
+        }
+
+        .delete-btn:hover {
+            background: #feb2b2;
+        }
+
+        .repeat-scope {
+            margin-top: 12px;
+            border: 1px dashed #a0aec0;
+            border-radius: 6px;
+            min-height: 80px;
+            padding: 15px;
+            background: #f7fafc;
+            position: relative;
+        }
+
+        .repeat-scope .scope-label {
+            font-size: 11px;
+            padding: 2px 8px;
+        }
+
+        .drop-placeholder {
+            height: 0;
+            background: #4299e1;
+            border-radius: 2px;
+            opacity: 0;
+            transition: all 0.2s ease;
+            overflow: hidden;
+        }
+
+        .drop-placeholder.active {
+            height: 3px;
+            margin: 6px 0;
+            opacity: 1;
+        }
+
+        .floating-panel {
+            position: absolute;
+            background: white;
+            border: 2px solid #4299e1;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            z-index: 1000;
+            min-width: 250px;
+            display: none;
+        }
+
+        .floating-panel.active {
+            display: block;
+        }
+
+        .floating-panel h4 {
+            margin-bottom: 12px;
+            color: #2d3748;
+            font-size: 14px;
+        }
+
+        .param-group {
+            margin-bottom: 10px;
+        }
+
+        .param-label {
+            display: block;
+            font-size: 12px;
+            color: #4a5568;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .param-input {
+            width: 100%;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 6px 8px;
+            font-size: 13px;
+        }
+
+        .param-input:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+        }
+
+        .param-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .param-row .param-group {
+            flex: 1;
+        }
+
+        .select-input {
+            width: 100%;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 6px 8px;
+            font-size: 13px;
+            background: white;
+        }
+
+        .json-output {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .close-panel {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #e2e8f0;
+            border: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-panel:hover {
+            background: #cbd5e0;
+        }
