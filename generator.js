@@ -4,7 +4,7 @@ let moduleIdCounter = 1;
 let moduleCounters = {
     FixedVariable: 0,
     RandomVariable: 0,
-    Array: 0,
+    RandomArray: 0,
     Repeat: 0
 };
 
@@ -34,8 +34,8 @@ const moduleTemplates = {
         visible: true,
         separator: 'newline'
     },
-    Array: {
-        type: 'Array',
+    RandomArray: {
+        type: 'RandomArray',
         dataType: 'int',
         lengthVar: '',
         min: 1,
@@ -156,7 +156,7 @@ function getDisplayName(type, number) {
     const typeMap = {
         'FixedVariable': 'fixed variable',
         'RandomVariable': 'random variable', 
-        'Array': 'random array',
+        'RandomArray': 'random array',
         'Repeat': 'repeat'
     };
     return `${typeMap[type]} ${number}`;
@@ -183,15 +183,28 @@ function generateModuleHTML(moduleData) {
     const visibilityClass = moduleData.visible ? 'visible' : 'hidden';
     const separatorDisplay = moduleData.visible ? 'inline-block' : 'none';
     
-    let controlsHTML = `
-        <div class="module-controls">
-            <button class="name-btn" onclick="toggleParameterPanel('${moduleData.id}')">${moduleData.name}</button>
-            <button class="type-btn" onclick="cycleDataType('${moduleData.id}')">${moduleData.dataType}</button>
-            <button class="visibility-btn ${visibilityClass}" onclick="toggleVisibility('${moduleData.id}')"></button>
-            <button class="separator-btn" style="display: ${separatorDisplay}" onclick="cycleSeparator('${moduleData.id}')">${moduleData.separator}</button>
-            <button class="delete-btn" onclick="deleteModule('${moduleData.id}')">×</button>
-        </div>
-    `;
+    let controlsHTML;
+    if (moduleData.type === 'Repeat') {
+        controlsHTML = `
+            <div class="module-controls">
+                <button class="name-btn" onclick="toggleParameterPanel('${moduleData.id}')">${moduleData.name}</button>
+                <button class="type-btn" onclick="showTimesVariable('${moduleData.id}')">${moduleData.timesVar || 'no variable'}</button>
+                <button class="visibility-btn ${visibilityClass}" onclick="toggleVisibility('${moduleData.id}')"></button>
+                <button class="separator-btn" style="display: ${separatorDisplay}" onclick="cycleSeparator('${moduleData.id}')">${moduleData.separator}</button>
+                <button class="delete-btn" onclick="deleteModule('${moduleData.id}')">×</button>
+            </div>
+        `;
+    } else {
+        controlsHTML = `
+            <div class="module-controls">
+                <button class="name-btn" onclick="toggleParameterPanel('${moduleData.id}')">${moduleData.name}</button>
+                <button class="type-btn" onclick="cycleDataType('${moduleData.id}')">${moduleData.dataType}</button>
+                <button class="visibility-btn ${visibilityClass}" onclick="toggleVisibility('${moduleData.id}')"></button>
+                <button class="separator-btn" style="display: ${separatorDisplay}" onclick="cycleSeparator('${moduleData.id}')">${moduleData.separator}</button>
+                <button class="delete-btn" onclick="deleteModule('${moduleData.id}')">×</button>
+            </div>
+        `;
+    }
 
     let scopeHTML = '';
     if (moduleData.type === 'Repeat') {
@@ -271,7 +284,7 @@ function generateParameterHTML(moduleData) {
                 </div>
             `;
         
-        case 'Array':
+        case 'RandomArray':
             const lengthOptions = integerVars.map(v => 
                 `<option value="${v}" ${v === moduleData.lengthVar ? 'selected' : ''}>${v}</option>`
             ).join('');
@@ -322,15 +335,29 @@ function updateModuleParameter(moduleId, param, value) {
     const moduleData = findModuleById(moduleId);
     if (moduleData) {
         moduleData[param] = value;
+        
+        // Update button display for times variable
+        if (param === 'timesVar' && moduleData.type === 'Repeat') {
+            const moduleElement = document.querySelector(`[data-module-id="${moduleId}"]`);
+            const typeBtn = moduleElement.querySelector('.type-btn');
+            typeBtn.textContent = value || 'no variable';
+        }
+        
         updateDataModel();
     }
 }
 
 function cycleDataType(moduleId) {
     const moduleData = findModuleById(moduleId);
-    if (!moduleData) return;
+    if (!moduleData || moduleData.type === 'Repeat') return;
 
-    const types = ['int', 'double', 'char'];
+    let types;
+    if (moduleData.type === 'RandomVariable' || moduleData.type === 'RandomArray') {
+        types = ['int', 'double', 'char', 'prime', 'power of 2'];
+    } else {
+        types = ['int', 'double', 'char'];
+    }
+    
     const currentIndex = types.indexOf(moduleData.dataType);
     const nextIndex = (currentIndex + 1) % types.length;
     moduleData.dataType = types[nextIndex];
@@ -340,6 +367,12 @@ function cycleDataType(moduleId) {
     moduleElement.querySelector('.type-btn').textContent = moduleData.dataType;
     
     updateDataModel();
+}
+
+function showTimesVariable(moduleId) {
+    // This function is called when clicking the times variable button
+    // It doesn't cycle, just opens the parameter panel to show/edit the times variable
+    toggleParameterPanel(moduleId);
 }
 
 function toggleVisibility(moduleId) {
@@ -533,7 +566,7 @@ function extractModuleData(element) {
                 cleanData.min = moduleData.min;
                 cleanData.max = moduleData.max;
                 break;
-            case 'Array':
+            case 'RandomArray':
                 cleanData.lengthVar = moduleData.lengthVar;
                 cleanData.min = moduleData.min;
                 cleanData.max = moduleData.max;
@@ -547,7 +580,7 @@ function extractModuleData(element) {
         return cleanData;
     }
     
-    // Fallback - shouldn't happen but prevents crashes
+    // Fallback... you never know :P
     return { 
         id: moduleId, 
         name: moduleName, 
@@ -568,7 +601,7 @@ function generateJSON() {
 function clearAll() {
     document.getElementById('root-scope').innerHTML = '<div class="scope-label">test scope</div>';
     dataModel.test = [];
-    moduleCounters = { FixedVariable: 0, RandomVariable: 0, Array: 0, Repeat: 0 };
+    moduleCounters = { FixedVariable: 0, RandomVariable: 0, RandomArray: 0, Repeat: 0 };
     moduleIdCounter = 1;
     closeParameterPanel();
     document.getElementById('json-output').style.display = 'none';
