@@ -18,6 +18,7 @@ let moduleCounters = {
 let draggedElement = null;
 let draggedType = null;
 let activePanel = null;
+let selectedModuleType = null;
 
 // Data model
 const dataModel = {
@@ -129,6 +130,10 @@ document.addEventListener('drop', handleDrop);
 document.addEventListener('dragend', handleDragEnd);
 document.addEventListener('click', handleGlobalClick);
 
+// Mobile double-click support
+let lastTouchTime = 0;
+document.addEventListener('touchstart', handleTouchStart);
+
 function handleDragStart(e) {
     if (e.target.classList.contains('palette-item')) {
         draggedType = e.target.dataset.type;
@@ -144,6 +149,8 @@ function handleDragStart(e) {
     }
 }
 
+let dragScrollInterval = null;
+
 function handleDragOver(e) {
     e.preventDefault();
     
@@ -152,6 +159,30 @@ function handleDragOver(e) {
 
     clearDropIndicators();
     scope.classList.add('drag-over');
+    
+    // Auto-scroll for mobile drag and drop
+    if (scope.id === 'root-scope') {
+        const rect = scope.getBoundingClientRect();
+        const scrollThreshold = 50;
+        const scrollSpeed = 10;
+        
+        if (dragScrollInterval) {
+            clearInterval(dragScrollInterval);
+            dragScrollInterval = null;
+        }
+        
+        if (e.clientY < rect.top + scrollThreshold) {
+            // Scroll up
+            dragScrollInterval = setInterval(() => {
+                scope.scrollTop -= scrollSpeed;
+            }, 50);
+        } else if (e.clientY > rect.bottom - scrollThreshold) {
+            // Scroll down
+            dragScrollInterval = setInterval(() => {
+                scope.scrollTop += scrollSpeed;
+            }, 50);
+        }
+    }
     
     const afterElement = getDragAfterElement(scope, e.clientY);
     let placeholder = scope.querySelector('.drop-placeholder');
@@ -234,11 +265,52 @@ function handleDragEnd(e) {
 }
 
 function handleGlobalClick(e) {
-    // Close floating panel if clicking outside
+    if (e.target.classList.contains('palette-item')) {
+        selectedModuleType = e.target.dataset.type;
+        document.querySelectorAll('.palette-item').forEach(item => item.classList.remove('selected'));
+        e.target.classList.add('selected');
+        return;
+    }
+    
+    if (selectedModuleType && (e.target.closest('.scope') || e.target.closest('.repeat-scope'))) {
+        const scope = e.target.closest('.scope') || e.target.closest('.repeat-scope');
+        
+        if (selectedModuleType === 'Repeat') {
+            const nestingLevel = getNestingLevel(scope);
+            if (nestingLevel >= 3) {
+                alert('Maximum nesting level (3) reached for repeat modules');
+                return;
+            }
+        }
+        
+        const moduleData = createNewModule(selectedModuleType);
+        const moduleElement = createModuleElement(moduleData);
+        
+        const clickY = e.clientY;
+        const afterElement = getDragAfterElement(scope, clickY);
+        
+        if (afterElement == null) {
+            scope.appendChild(moduleElement);
+        } else {
+            scope.insertBefore(moduleElement, afterElement);
+        }
+        
+        addModuleToDataModel(moduleData, scope);
+        
+        document.querySelectorAll('.palette-item').forEach(item => item.classList.remove('selected'));
+        selectedModuleType = null;
+        return;
+    }
+    
     if (!e.target.closest('.floating-panel') && 
         !e.target.classList.contains('name-btn') && 
         !e.target.closest('.name-btn')) {
         closeParameterPanel();
+    }
+    
+    if (!e.target.closest('.palette')) {
+        document.querySelectorAll('.palette-item').forEach(item => item.classList.remove('selected'));
+        selectedModuleType = null;
     }
 }
 
@@ -1163,6 +1235,11 @@ function cleanup() {
     // Re-enable palette scrolling
     document.querySelector('.palette-scroll').classList.remove('no-scroll');
     
+    if (dragScrollInterval) {
+        clearInterval(dragScrollInterval);
+        dragScrollInterval = null;
+    }
+    
     draggedElement = null;
     draggedType = null;
 }
@@ -1316,6 +1393,50 @@ function downloadTest() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+}
+
+function handleTouchStart(e) {
+    if (e.target.closest('.palette-item')) {
+        const currentTime = new Date().getTime();
+        const tapInterval = currentTime - lastTouchTime;
+        
+        if (tapInterval < 300 && tapInterval > 0) {
+            // Double tap detected
+            e.preventDefault();
+            const paletteItem = e.target.closest('.palette-item');
+            const moduleType = paletteItem.dataset.type;
+            
+            // Check nesting limit for repeat modules
+            if (moduleType === 'Repeat') {
+                const rootScope = document.getElementById('root-scope');
+                const nestingLevel = getNestingLevel(rootScope);
+                if (nestingLevel >= 3) {
+                    alert('Maximum nesting level (3) reached for repeat modules');
+                    return;
+                }
+            }
+            
+            // Create module and add to beginning of root scope
+            const moduleData = createNewModule(moduleType);
+            const moduleElement = createModuleElement(moduleData);
+            const rootScope = document.getElementById('root-scope');
+            
+            // Add as first child
+            if (rootScope.firstChild) {
+                rootScope.insertBefore(moduleElement, rootScope.firstChild);
+            } else {
+                rootScope.appendChild(moduleElement);
+            }
+            
+            // Add to data model at the beginning
+            dataModel.test.unshift(moduleData);
+            
+            // Scroll to top to show the new module
+            rootScope.scrollTop = 0;
+        }
+        
+        lastTouchTime = currentTime;
+    }
 }
 
 function clearAll() { 
