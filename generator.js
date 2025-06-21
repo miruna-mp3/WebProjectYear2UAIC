@@ -134,6 +134,8 @@ function handleDragStart(e) {
         draggedType = e.target.dataset.type;
         draggedElement = null;
         e.dataTransfer.effectAllowed = 'copy';
+        // Disable palette scrolling during drag
+        document.querySelector('.palette-scroll').classList.add('no-scroll');
     } else if (e.target.classList.contains('module-card')) {
         draggedElement = e.target;
         draggedType = null;
@@ -1158,6 +1160,9 @@ function cleanup() {
         }
     });
     
+    // Re-enable palette scrolling
+    document.querySelector('.palette-scroll').classList.remove('no-scroll');
+    
     draggedElement = null;
     draggedType = null;
 }
@@ -1296,5 +1301,12 @@ function clearAll() {
     moduleCounters = { FixedVariable: 0, RandomVariable: 0, RandomArray: 0, Repeat: 0, Permutation: 0, MazeMatrix: 0, SparseMatrix: 0, RandomGraph: 0, BipartiteGraph: 0, RandomTree: 0, DirectedAcyclicGraph: 0 };
     moduleIdCounter = 1;
     closeParameterPanel();
+    
+    // Clear the visual elements from root-scope
+    const rootScope = document.getElementById('root-scope');
+    const moduleCards = rootScope.querySelectorAll('.module-card');
+    moduleCards.forEach(card => card.remove());
+    
+    // Hide JSON output
     document.getElementById('json-output').style.display = 'none';
 }
