@@ -219,6 +219,27 @@ body {
     color: white;
 }
 
+.multival-btn {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fbbf24;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 55px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.multival-btn:hover {
+    background: #fbbf24;
+    color: white;
+}
+
 .sort-btn {
     background: #f3e8ff;
     color: #6b21a8;

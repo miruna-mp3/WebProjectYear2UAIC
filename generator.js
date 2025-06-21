@@ -40,6 +40,7 @@ const moduleTemplates = {
         lengthVar: '',
         min: 1,
         max: 100,
+        multivalType: 'distinct',
         sortType: 'none',
         visible: true,
         separator: 'space'
@@ -200,6 +201,7 @@ function generateModuleHTML(moduleData) {
             <div class="module-controls">
                 <button class="name-btn" onclick="toggleParameterPanel('${moduleData.id}')">${moduleData.name}</button>
                 <button class="type-btn" onclick="cycleDataType('${moduleData.id}')">${moduleData.dataType}</button>
+                <button class="multival-btn" onclick="cycleMultivalType('${moduleData.id}')">${moduleData.multivalType || 'distinct'}</button>
                 <button class="sort-btn" onclick="cycleSortType('${moduleData.id}')">${moduleData.sortType || 'none'}</button>
                 <button class="visibility-btn ${visibilityClass}" onclick="toggleVisibility('${moduleData.id}')"></button>
                 <button class="separator-btn" style="display: ${separatorDisplay}" onclick="cycleSeparator('${moduleData.id}')">${moduleData.separator}</button>
@@ -425,6 +427,22 @@ function cycleSeparator(moduleId) {
     updateDataModel();
 }
 
+function cycleMultivalType(moduleId) {
+    const moduleData = findModuleById(moduleId);
+    if (!moduleData || moduleData.type !== 'RandomArray') return;
+
+    const multivalTypes = ['distinct', 'duplicate'];
+    const currentIndex = multivalTypes.indexOf(moduleData.multivalType);
+    const nextIndex = (currentIndex + 1) % multivalTypes.length;
+    moduleData.multivalType = multivalTypes[nextIndex];
+    
+    // Update button display
+    const moduleElement = document.querySelector(`[data-module-id="${moduleId}"]`);
+    moduleElement.querySelector('.multival-btn').textContent = moduleData.multivalType;
+    
+    updateDataModel();
+}
+
 function cycleSortType(moduleId) {
     const moduleData = findModuleById(moduleId);
     if (!moduleData || moduleData.type !== 'RandomArray') return;
@@ -598,6 +616,7 @@ function extractModuleData(element) {
                 cleanData.lengthVar = moduleData.lengthVar;
                 cleanData.min = moduleData.min;
                 cleanData.max = moduleData.max;
+                cleanData.multivalType = moduleData.multivalType;
                 cleanData.sortType = moduleData.sortType;
                 break;
             case 'Repeat':
