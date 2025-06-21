@@ -233,7 +233,9 @@ function handleDragEnd(e) {
 
 function handleGlobalClick(e) {
     // Close floating panel if clicking outside
-    if (!e.target.closest('.floating-panel') && !e.target.classList.contains('name-btn')) {
+    if (!e.target.closest('.floating-panel') && 
+        !e.target.classList.contains('name-btn') && 
+        !e.target.closest('.name-btn')) {
         closeParameterPanel();
     }
 }
@@ -292,7 +294,7 @@ function generateModuleHTML(moduleData) {
         controlsHTML = `
             <div class="module-controls">
                 <button class="name-btn" onclick="toggleParameterPanel('${moduleData.id}')">${moduleData.name}</button>
-                <button class="type-btn" onclick="showTimesVariable('${moduleData.id}')">${moduleData.timesVar || 'no variable'}</button>
+                <span class="type-btn repeat-times-display">${moduleData.timesVar || 'no variable'}</span>
                 <button class="visibility-btn ${visibilityClass}" onclick="toggleVisibility('${moduleData.id}')"></button>
                 <button class="separator-btn" style="display: ${separatorDisplay}" onclick="cycleSeparator('${moduleData.id}')">${moduleData.separator}</button>
                 <button class="delete-btn" onclick="deleteModule('${moduleData.id}')">×</button>
@@ -437,11 +439,14 @@ function toggleParameterPanel(moduleId) {
         return;
     }
 
-    // Position panel below the module controls (not the entire module)
-    const controlsElement = moduleElement.querySelector('.module-controls');
-    const rect = controlsElement.getBoundingClientRect();
-    panel.style.left = `${rect.left}px`;
-    panel.style.top = `${rect.bottom + 5}px`;
+    // Position panel below the name button specifically
+    const nameBtn = moduleElement.querySelector('.name-btn');
+    const rect = nameBtn.getBoundingClientRect();
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+    
+    panel.style.left = `${rect.left + scrollLeft}px`;
+    panel.style.top = `${rect.bottom + scrollTop + 4}px`;
     
     // Update panel content
     document.getElementById('panel-title').textContent = `${moduleData.name} parameters`;
@@ -738,11 +743,11 @@ function updateModuleParameter(moduleId, param, value) {
     if (moduleData) {
         moduleData[param] = value;
         
-        // Update button display for times variable
+        // Update display for times variable
         if (param === 'timesVar' && moduleData.type === 'Repeat') {
             const moduleElement = document.querySelector(`[data-module-id="${moduleId}"]`);
-            const typeBtn = moduleElement.querySelector('.type-btn');
-            typeBtn.textContent = value || 'no variable';
+            const timesDisplay = moduleElement.querySelector('.repeat-times-display');
+            timesDisplay.textContent = value || 'no variable';
         }
         
         updateDataModel();
@@ -771,11 +776,6 @@ function cycleDataType(moduleId) {
     updateDataModel();
 }
 
-function showTimesVariable(moduleId) {
-    // This function is called when clicking the times variable button
-    // It doesn't cycle, just opens the parameter panel to show/edit the times variable
-    toggleParameterPanel(moduleId);
-}
 
 function toggleVisibility(moduleId) {
     const moduleData = findModuleById(moduleId);
