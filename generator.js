@@ -1296,6 +1296,28 @@ function generateJSON() {
     output.style.display = 'block';
 }
 
+function storeJSON() {
+    updateDataModel(); 
+}
+
+function generateTest() {
+    updateDataModel(); 
+}
+
+function downloadTest() {
+    updateDataModel();
+    const dataStr = JSON.stringify(dataModel, null, 2);
+    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'test.txt';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
 function clearAll() { 
     dataModel.test = [];
     moduleCounters = { FixedVariable: 0, RandomVariable: 0, RandomArray: 0, Repeat: 0, Permutation: 0, MazeMatrix: 0, SparseMatrix: 0, RandomGraph: 0, BipartiteGraph: 0, RandomTree: 0, DirectedAcyclicGraph: 0 };
