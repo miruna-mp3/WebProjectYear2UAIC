@@ -2,11 +2,13 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-}
+} 
+
 @font-face {
-  font-family: JerseyCharted;
-  src: url(Jersey20Charted.ttf);
+  font-family: Groovy;
+  src: url(VT323.ttf);
 }
+
 @font-face {
   font-family: Jersey;
   src: url(Jersey25.ttf);
@@ -100,9 +102,6 @@ body {
     border-radius: 0.1875rem;
 }
 
-.palette-scroll::-webkit-scrollbar-thumb:hover {
-    background: #718096;
-}
 
 .palette h3 {
     color: #2d3748;
@@ -165,7 +164,7 @@ body {
     justify-items: center;
 }
 
-.btn {
+.btn { 
     background: linear-gradient(45deg, #4299e1, #3182ce);
     color: white;
     border: none;
@@ -279,14 +278,16 @@ body {
 }
 
 .inline-input {
+    font-family: 'Groovy';
     border: 1px solid #e2e8f0;
     border-radius: 0.25rem;
     padding: 0.25rem 0.5rem;
-    font-size: 0.6875rem;
+    font-size: 1rem;
     height: 1.5rem;
     width: 5rem;
     display: flex;
     align-items: center;
+    text-align: center;
 }
 
 .inline-input-small {
@@ -306,7 +307,7 @@ body {
     margin: 0;
 }
 
-.inline-input[type=number] {
+.inline-input[type=number] { 
     appearance: textfield;
     -moz-appearance: textfield;
 }
@@ -400,7 +401,7 @@ body {
     border-radius: 0.1875rem;
     cursor: pointer;
     font-size: 0.625rem;
-    font-weight: 500;
+    font-weight: 600;
     min-width: 3.125rem;
     height: 1.5rem;
     display: flex;
@@ -602,11 +603,12 @@ body {
 }
 
 .select-input {
+    font-family: 'Jersey';
     width: 100%;
     border: 1px solid #e2e8f0;
     border-radius: 0.25rem;
     padding: 0.375rem 0.5rem;
-    font-size: 0.8125rem;
+    font-size: 0.85rem;
     background: white;
 }
 
@@ -711,7 +713,7 @@ body {
     .btn {
         max-width: none;
         padding: 0.375rem 0.5rem;
-        font-size: 0.6875rem;
+        font-size: 0.8875rem;
         width: 100%;
     }
     

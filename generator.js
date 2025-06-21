@@ -510,7 +510,7 @@ function generateParameterHTML(moduleData) {
             
             return `
                 <div class="param-group">
-                    <label class="param-label">length variable:</label>
+                    <label class="param-label">length:</label>
                     <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'lengthVar', this.value)">
                         <option value="">select variable...</option>
                         ${lengthOptions}
@@ -518,14 +518,14 @@ function generateParameterHTML(moduleData) {
                 </div>
                 <div class="param-row">
                     <div class="param-group">
-                        <label class="param-label">min variable:</label>
+                        <label class="param-label">min:</label>
                         <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'minVar', this.value)">
                             <option value="">select variable...</option>
                             ${minOptions}
                         </select>
                     </div>
                     <div class="param-group">
-                        <label class="param-label">max variable:</label>
+                        <label class="param-label">max:</label>
                         <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'maxVar', this.value)">
                             <option value="">select variable...</option>
                             ${maxOptions}
@@ -541,7 +541,7 @@ function generateParameterHTML(moduleData) {
             
             return `
                 <div class="param-group">
-                    <label class="param-label">times variable:</label>
+                    <label class="param-label">times:</label>
                     <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'timesVar', this.value)">
                         <option value="">select variable...</option>
                         ${timesOptions}
@@ -560,14 +560,14 @@ function generateParameterHTML(moduleData) {
             return `
                 <div class="param-row">
                     <div class="param-group">
-                        <label class="param-label">length variable:</label>
+                        <label class="param-label">length:</label>
                         <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'lengthVar', this.value)">
                             <option value="">select variable...</option>
                             ${permLengthOptions}
                         </select>
                     </div>
                     <div class="param-group">
-                        <label class="param-label">order variable:</label>
+                        <label class="param-label">order:</label>
                         <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'orderVar', this.value)">
                             <option value="">select variable...</option>
                             ${orderOptions}
@@ -587,14 +587,14 @@ function generateParameterHTML(moduleData) {
             return `
                 <div class="param-row">
                     <div class="param-group">
-                        <label class="param-label">rows variable:</label>
+                        <label class="param-label">rows:</label>
                         <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'rowsVar', this.value)">
                             <option value="">select variable...</option>
                             ${mazeRowsOptions}
                         </select>
                     </div>
                     <div class="param-group">
-                        <label class="param-label">cols variable:</label>
+                        <label class="param-label">cols:</label>
                         <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'colsVar', this.value)">
                             <option value="">select variable...</option>
                             ${mazeColsOptions}
@@ -623,14 +623,14 @@ function generateParameterHTML(moduleData) {
             return `
                 <div class="param-row">
                     <div class="param-group">
-                        <label class="param-label">rows variable:</label>
+                        <label class="param-label">rows:</label>
                         <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'rowsVar', this.value)">
                             <option value="">select variable...</option>
                             ${sparseRowsOptions}
                         </select>
                     </div>
                     <div class="param-group">
-                        <label class="param-label">cols variable:</label>
+                        <label class="param-label">cols:</label>
                         <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'colsVar', this.value)">
                             <option value="">select variable...</option>
                             ${sparseColsOptions}
@@ -639,14 +639,14 @@ function generateParameterHTML(moduleData) {
                 </div>
                 <div class="param-row">
                     <div class="param-group">
-                        <label class="param-label">min value variable:</label>
+                        <label class="param-label">min value:</label>
                         <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'minValueVar', this.value)">
                             <option value="">select variable...</option>
                             ${sparseMinOptions}
                         </select>
                     </div>
                     <div class="param-group">
-                        <label class="param-label">max value variable:</label>
+                        <label class="param-label">max value:</label>
                         <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'maxValueVar', this.value)">
                             <option value="">select variable...</option>
                             ${sparseMaxOptions}
@@ -654,7 +654,7 @@ function generateParameterHTML(moduleData) {
                     </div>
                 </div>
                 <div class="param-group">
-                    <label class="param-label">zero values variable:</label>
+                    <label class="param-label">zero values:</label>
                     <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'zeroValuesVar', this.value)">
                         <option value="">select variable...</option>
                         ${sparseZeroOptions}
@@ -673,14 +673,14 @@ function generateParameterHTML(moduleData) {
             return `
                 <div class="param-row">
                     <div class="param-group">
-                        <label class="param-label">nodes variable:</label>
+                        <label class="param-label">nodes:</label>
                         <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'nodesVar', this.value)">
                             <option value="">select variable...</option>
                             ${graphNodesOptions}
                         </select>
                     </div>
                     <div class="param-group">
-                        <label class="param-label">edges variable:</label>
+                        <label class="param-label">edges:</label>
                         <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'edgesVar', this.value)">
                             <option value="">select variable...</option>
                             ${graphEdgesOptions}
@@ -696,7 +696,7 @@ function generateParameterHTML(moduleData) {
             
             return `
                 <div class="param-group">
-                    <label class="param-label">nodes variable:</label>
+                    <label class="param-label">nodes:</label>
                     <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'nodesVar', this.value)">
                         <option value="">select variable...</option>
                         ${bipartiteNodesOptions}
@@ -711,7 +711,7 @@ function generateParameterHTML(moduleData) {
             
             return `
                 <div class="param-group">
-                    <label class="param-label">nodes variable:</label>
+                    <label class="param-label">nodes:</label>
                     <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'nodesVar', this.value)">
                         <option value="">select variable...</option>
                         ${treeNodesOptions}
@@ -726,7 +726,7 @@ function generateParameterHTML(moduleData) {
             
             return `
                 <div class="param-group">
-                    <label class="param-label">nodes variable:</label>
+                    <label class="param-label">nodes:</label>
                     <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'nodesVar', this.value)">
                         <option value="">select variable...</option>
                         ${dagNodesOptions}
