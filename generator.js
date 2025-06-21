@@ -18,7 +18,6 @@ let moduleCounters = {
 let draggedElement = null;
 let draggedType = null;
 let activePanel = null;
-let selectedModuleType = null;
 
 // Data model
 const dataModel = {
@@ -265,52 +264,10 @@ function handleDragEnd(e) {
 }
 
 function handleGlobalClick(e) {
-    if (e.target.classList.contains('palette-item')) {
-        selectedModuleType = e.target.dataset.type;
-        document.querySelectorAll('.palette-item').forEach(item => item.classList.remove('selected'));
-        e.target.classList.add('selected');
-        return;
-    }
-    
-    if (selectedModuleType && (e.target.closest('.scope') || e.target.closest('.repeat-scope'))) {
-        const scope = e.target.closest('.scope') || e.target.closest('.repeat-scope');
-        
-        if (selectedModuleType === 'Repeat') {
-            const nestingLevel = getNestingLevel(scope);
-            if (nestingLevel >= 3) {
-                alert('Maximum nesting level (3) reached for repeat modules');
-                return;
-            }
-        }
-        
-        const moduleData = createNewModule(selectedModuleType);
-        const moduleElement = createModuleElement(moduleData);
-        
-        const clickY = e.clientY;
-        const afterElement = getDragAfterElement(scope, clickY);
-        
-        if (afterElement == null) {
-            scope.appendChild(moduleElement);
-        } else {
-            scope.insertBefore(moduleElement, afterElement);
-        }
-        
-        addModuleToDataModel(moduleData, scope);
-        
-        document.querySelectorAll('.palette-item').forEach(item => item.classList.remove('selected'));
-        selectedModuleType = null;
-        return;
-    }
-    
     if (!e.target.closest('.floating-panel') && 
         !e.target.classList.contains('name-btn') && 
         !e.target.closest('.name-btn')) {
         closeParameterPanel();
-    }
-    
-    if (!e.target.closest('.palette')) {
-        document.querySelectorAll('.palette-item').forEach(item => item.classList.remove('selected'));
-        selectedModuleType = null;
     }
 }
 

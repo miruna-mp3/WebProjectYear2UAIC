@@ -203,9 +203,8 @@ body {
 
 .scope {
     background: white;
-    border: 2px dashed #cbd5e0;
     border-radius: 0.5rem;
-    padding: 1rem;
+    padding: 0.3rem;
     position: relative;
     flex: 0 0 70%;
     overflow-y: auto;
@@ -227,8 +226,8 @@ body {
     background: white;
     border: 1px solid #e2e8f0;
     border-radius: 0.5rem;
-    padding: 0.75rem;
-    margin-bottom: 0.5rem;
+    padding: 0.3rem;
+    margin-bottom: 0.3rem;
     cursor: grab;
     transition: all 0.2s ease;
     position: relative;
@@ -523,11 +522,11 @@ body {
 }
 
 .repeat-scope {
-    margin-top: 0.75rem;
+    margin-top: 0.3rem;
     border: 1px dashed #a0aec0;
     border-radius: 0.375rem;
     min-height: 5rem;
-    padding: 0.9375rem;
+    padding: 0.3rem;
     background: #f7fafc;
     position: relative;
     pointer-events: auto;
@@ -727,8 +726,8 @@ body {
     
     .json-output {
         flex: 1;
-        min-height: 4rem;
-        max-height: 10rem;
+        min-height: 6rem;
+        max-height: 7.5rem;
     }
     
     .btn {
