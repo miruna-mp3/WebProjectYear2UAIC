@@ -450,7 +450,7 @@ function toggleParameterPanel(moduleId) {
     panel.style.top = `${rect.bottom + scrollTop + 4}px`;
     
     // Update panel content
-    document.getElementById('panel-title').textContent = `${moduleData.name} parameters`;
+    document.getElementById('panel-title').textContent = `${moduleData.name}`;
     document.getElementById('panel-content').innerHTML = generateParameterHTML(moduleData);
     
     // Show panel

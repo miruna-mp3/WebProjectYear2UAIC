@@ -143,8 +143,8 @@ body {
 }
 
 .palette-item .desc {
-    font-size: 0.72rem;
-    color: #718096;
+    font-size: 0.9rem;
+    color: #435369;
     margin-left: 0.25rem;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -563,7 +563,7 @@ body {
 .floating-panel h4 {
     margin-bottom: 0.75rem;
     color: #2d3748;
-    font-size: 0.875rem;
+    font-size: 1.25rem;
 }
 
 .param-group {
@@ -572,7 +572,7 @@ body {
 
 .param-label {
     display: block;
-    font-size: 0.75rem;
+    font-size: 1rem;
     color: #4a5568;
     font-weight: 500;
     margin-bottom: 0.25rem;
@@ -616,7 +616,7 @@ body {
     padding: 1rem;
     border-radius: 0.5rem;
     font-family: 'Jersey';
-    font-size: 0.75rem;
+    font-size: 0.95rem;
     white-space: pre-wrap;
     overflow-y: auto;
     overflow-x: visible;
