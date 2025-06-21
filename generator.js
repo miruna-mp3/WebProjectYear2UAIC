@@ -117,6 +117,16 @@ function handleDrop(e) {
 
     if (draggedType) {
         // Creating new module from palette
+        // Check nesting limit for Repeat modules
+        if (draggedType === 'Repeat') {
+            const nestingLevel = getNestingLevel(scope);
+            if (nestingLevel >= 3) {
+                alert('Maximum nesting level (3) reached for repeat modules');
+                cleanup();
+                return;
+            }
+        }
+        
         const moduleData = createNewModule(draggedType);
         const moduleElement = createModuleElement(moduleData);
         scope.insertBefore(moduleElement, placeholder);
@@ -125,6 +135,23 @@ function handleDrop(e) {
         addModuleToDataModel(moduleData, scope);
     } else if (draggedElement) {
         // Moving existing module
+        // Check if we're trying to drop into itself or a descendant
+        if (scope.contains(draggedElement) && (scope === draggedElement || draggedElement.contains(scope))) {
+            cleanup();
+            return;
+        }
+        
+        // Check nesting limit when moving Repeat modules
+        const moduleData = findModuleById(draggedElement.dataset.moduleId);
+        if (moduleData && moduleData.type === 'Repeat') {
+            const nestingLevel = getNestingLevel(scope);
+            if (nestingLevel >= 3) {
+                alert('Maximum nesting level (3) reached for repeat modules');
+                cleanup();
+                return;
+            }
+        }
+        
         scope.insertBefore(draggedElement, placeholder);
         updateDataModel();
     }
@@ -490,14 +517,20 @@ function deleteModule(moduleId) {
 function getAllIntegerVariables() {
     const variables = [];
     
-    function collectVariables(modules) {
+    function collectVariables(modules, visited = new Set()) {
         modules.forEach(module => {
+            // Prevent infinite recursion by tracking visited modules
+            if (visited.has(module.id)) {
+                return;
+            }
+            visited.add(module.id);
+            
             if ((module.type === 'FixedVariable' || module.type === 'RandomVariable') && 
                 module.dataType === 'int') {
                 variables.push(module.name);
             }
-            if (module.type === 'Repeat' && module.modules) {
-                collectVariables(module.modules);
+            if (module.type === 'Repeat' && module.modules && Array.isArray(module.modules) && module.modules.length > 0) {
+                collectVariables(module.modules, visited);
             }
         });
     }
@@ -507,17 +540,41 @@ function getAllIntegerVariables() {
 }
 
 function findModuleById(moduleId) {
-    function searchModules(modules) {
+    function searchModules(modules, visited = new Set()) {
         for (let module of modules) {
+            if (visited.has(module.id)) {
+                continue;
+            }
+            visited.add(module.id);
+            
             if (module.id == moduleId) return module;
-            if (module.type === 'Repeat' && module.modules) {
-                const found = searchModules(module.modules);
+            if (module.type === 'Repeat' && module.modules && Array.isArray(module.modules) && module.modules.length > 0) {
+                const found = searchModules(module.modules, visited);
                 if (found) return found;
             }
         }
         return null;
     }
     return searchModules(dataModel.test);
+}
+
+function getNestingLevel(scope) {
+    let level = 0;
+    let current = scope;
+    
+    while (current && current.id !== 'root-scope') {
+        if (current.classList.contains('repeat-scope')) {
+            level++;
+        }
+        current = current.parentElement;
+        
+        // Find the next scope ancestor
+        while (current && !current.classList.contains('scope') && !current.classList.contains('repeat-scope')) {
+            current = current.parentElement;
+        }
+    }
+    
+    return level;
 }
 
 function getDragAfterElement(container, y) {
