@@ -198,6 +198,47 @@ body {
     color: white;
 }
 
+.name-btn-static {
+    cursor: default;
+}
+
+.name-btn-static:hover {
+    background: #edf2f7;
+    color: #2d3748;
+}
+
+.inline-input {
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 11px;
+    height: 24px;
+    width: 80px;
+    display: flex;
+    align-items: center;
+}
+
+.inline-input-small {
+    width: 50px;
+}
+
+.inline-input:focus {
+    outline: none;
+    border-color: #4299e1;
+    box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.1);
+}
+
+/* Remove number input spinners */
+.inline-input::-webkit-outer-spin-button,
+.inline-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.inline-input[type=number] {
+    -moz-appearance: textfield;
+}
+
 .type-btn {
     background: #e6fffa;
     color: #065f46;

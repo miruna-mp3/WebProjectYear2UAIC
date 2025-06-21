@@ -29,8 +29,8 @@ const moduleTemplates = {
     RandomVariable: {
         type: 'RandomVariable',
         dataType: 'int',
-        min: 1,
-        max: 100,
+        min: '',
+        max: '',
         visible: true,
         separator: 'newline'
     },
@@ -208,10 +208,26 @@ function generateModuleHTML(moduleData) {
                 <button class="delete-btn" onclick="deleteModule('${moduleData.id}')">×</button>
             </div>
         `;
-    } else {
+    } else if (moduleData.type === 'FixedVariable') {
         controlsHTML = `
             <div class="module-controls">
-                <button class="name-btn" onclick="toggleParameterPanel('${moduleData.id}')">${moduleData.name}</button>
+                <button class="name-btn name-btn-static">${moduleData.name}</button>
+                <input type="text" class="inline-input" value="${moduleData.value}" 
+                       placeholder="value" onchange="updateModuleParameter('${moduleData.id}', 'value', this.value)">
+                <button class="type-btn" onclick="cycleDataType('${moduleData.id}')">${moduleData.dataType}</button>
+                <button class="visibility-btn ${visibilityClass}" onclick="toggleVisibility('${moduleData.id}')"></button>
+                <button class="separator-btn" style="display: ${separatorDisplay}" onclick="cycleSeparator('${moduleData.id}')">${moduleData.separator}</button>
+                <button class="delete-btn" onclick="deleteModule('${moduleData.id}')">×</button>
+            </div>
+        `;
+    } else if (moduleData.type === 'RandomVariable') {
+        controlsHTML = `
+            <div class="module-controls">
+                <button class="name-btn name-btn-static">${moduleData.name}</button>
+                <input type="text" class="inline-input inline-input-small" value="${moduleData.min || ''}" 
+                       placeholder="min" onchange="updateModuleParameter('${moduleData.id}', 'min', parseInt(this.value) || 0)">
+                <input type="text" class="inline-input inline-input-small" value="${moduleData.max || ''}" 
+                       placeholder="max" onchange="updateModuleParameter('${moduleData.id}', 'max', parseInt(this.value) || 0)">
                 <button class="type-btn" onclick="cycleDataType('${moduleData.id}')">${moduleData.dataType}</button>
                 <button class="visibility-btn ${visibilityClass}" onclick="toggleVisibility('${moduleData.id}')"></button>
                 <button class="separator-btn" style="display: ${separatorDisplay}" onclick="cycleSeparator('${moduleData.id}')">${moduleData.separator}</button>
