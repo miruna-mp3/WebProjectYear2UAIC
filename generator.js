@@ -9,7 +9,10 @@ let moduleCounters = {
     Permutation: 0,
     MazeMatrix: 0,
     SparseMatrix: 0,
-    RandomGraph: 0
+    RandomGraph: 0,
+    BipartiteGraph: 0,
+    RandomTree: 0,
+    DirectedAcyclicGraph: 0
 };
 
 let draggedElement = null;
@@ -81,6 +84,32 @@ const moduleTemplates = {
         direction: 'dir',
         weighted: 'w',
         connectivity: 'conn',
+        visible: true,
+        separator: 'newline'
+    },
+    BipartiteGraph: {
+        type: 'BipartiteGraph',
+        nodesVar: '',
+        format: 'list',
+        direction: 'dir',
+        weighted: 'w',
+        connectivity: 'conn',
+        visible: true,
+        separator: 'newline'
+    },
+    RandomTree: {
+        type: 'RandomTree',
+        nodesVar: '',
+        format: 'list',
+        weighted: 'w',
+        visible: true,
+        separator: 'newline'
+    },
+    DirectedAcyclicGraph: {
+        type: 'DirectedAcyclicGraph',
+        nodesVar: '',
+        format: 'list',
+        weighted: 'w',
         visible: true,
         separator: 'newline'
     },
@@ -229,7 +258,10 @@ function getDisplayName(type, number) {
         'Permutation': 'permutation',
         'MazeMatrix': 'maze matrix',
         'SparseMatrix': 'sparse matrix',
-        'RandomGraph': 'random graph'
+        'RandomGraph': 'random graph',
+        'BipartiteGraph': 'bipartite graph',
+        'RandomTree': 'random tree',
+        'DirectedAcyclicGraph': 'directed acyclic graph'
     };
     return `${typeMap[type]} ${number}`;
 }
@@ -313,6 +345,41 @@ function generateModuleHTML(moduleData) {
                 <button class="direction-btn" onclick="cycleGraphDirection('${moduleData.id}')">${moduleData.direction}</button>
                 <button class="weight-btn" onclick="cycleGraphWeight('${moduleData.id}')">${moduleData.weighted}</button>
                 <button class="connectivity-btn" onclick="cycleGraphConnectivity('${moduleData.id}')">${moduleData.connectivity}</button>
+                <button class="visibility-btn ${visibilityClass}" onclick="toggleVisibility('${moduleData.id}')"></button>
+                <button class="separator-btn" style="display: ${separatorDisplay}" onclick="cycleSeparator('${moduleData.id}')">${moduleData.separator}</button>
+                <button class="delete-btn" onclick="deleteModule('${moduleData.id}')">×</button>
+            </div>
+        `;
+    } else if (moduleData.type === 'BipartiteGraph') {
+        controlsHTML = `
+            <div class="module-controls">
+                <button class="name-btn" onclick="toggleParameterPanel('${moduleData.id}')">${moduleData.name}</button>
+                <button class="format-btn" onclick="cycleBipartiteFormat('${moduleData.id}')">${moduleData.format}</button>
+                <button class="direction-btn" onclick="cycleBipartiteDirection('${moduleData.id}')">${moduleData.direction}</button>
+                <button class="weight-btn" onclick="cycleBipartiteWeight('${moduleData.id}')">${moduleData.weighted}</button>
+                <button class="connectivity-btn" onclick="cycleBipartiteConnectivity('${moduleData.id}')">${moduleData.connectivity}</button>
+                <button class="visibility-btn ${visibilityClass}" onclick="toggleVisibility('${moduleData.id}')"></button>
+                <button class="separator-btn" style="display: ${separatorDisplay}" onclick="cycleSeparator('${moduleData.id}')">${moduleData.separator}</button>
+                <button class="delete-btn" onclick="deleteModule('${moduleData.id}')">×</button>
+            </div>
+        `;
+    } else if (moduleData.type === 'RandomTree') {
+        controlsHTML = `
+            <div class="module-controls">
+                <button class="name-btn" onclick="toggleParameterPanel('${moduleData.id}')">${moduleData.name}</button>
+                <button class="format-btn" onclick="cycleTreeFormat('${moduleData.id}')">${moduleData.format}</button>
+                <button class="weight-btn" onclick="cycleTreeWeight('${moduleData.id}')">${moduleData.weighted}</button>
+                <button class="visibility-btn ${visibilityClass}" onclick="toggleVisibility('${moduleData.id}')"></button>
+                <button class="separator-btn" style="display: ${separatorDisplay}" onclick="cycleSeparator('${moduleData.id}')">${moduleData.separator}</button>
+                <button class="delete-btn" onclick="deleteModule('${moduleData.id}')">×</button>
+            </div>
+        `;
+    } else if (moduleData.type === 'DirectedAcyclicGraph') {
+        controlsHTML = `
+            <div class="module-controls">
+                <button class="name-btn" onclick="toggleParameterPanel('${moduleData.id}')">${moduleData.name}</button>
+                <button class="format-btn" onclick="cycleDagFormat('${moduleData.id}')">${moduleData.format}</button>
+                <button class="weight-btn" onclick="cycleDagWeight('${moduleData.id}')">${moduleData.weighted}</button>
                 <button class="visibility-btn ${visibilityClass}" onclick="toggleVisibility('${moduleData.id}')"></button>
                 <button class="separator-btn" style="display: ${separatorDisplay}" onclick="cycleSeparator('${moduleData.id}')">${moduleData.separator}</button>
                 <button class="delete-btn" onclick="deleteModule('${moduleData.id}')">×</button>
@@ -616,6 +683,51 @@ function generateParameterHTML(moduleData) {
                 </div>
             `;
         
+        case 'BipartiteGraph':
+            const bipartiteNodesOptions = integerVars.map(v => 
+                `<option value="${v}" ${v === moduleData.nodesVar ? 'selected' : ''}>${v}</option>`
+            ).join('');
+            
+            return `
+                <div class="param-group">
+                    <label class="param-label">nodes variable:</label>
+                    <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'nodesVar', this.value)">
+                        <option value="">select variable...</option>
+                        ${bipartiteNodesOptions}
+                    </select>
+                </div>
+            `;
+        
+        case 'RandomTree':
+            const treeNodesOptions = integerVars.map(v => 
+                `<option value="${v}" ${v === moduleData.nodesVar ? 'selected' : ''}>${v}</option>`
+            ).join('');
+            
+            return `
+                <div class="param-group">
+                    <label class="param-label">nodes variable:</label>
+                    <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'nodesVar', this.value)">
+                        <option value="">select variable...</option>
+                        ${treeNodesOptions}
+                    </select>
+                </div>
+            `;
+        
+        case 'DirectedAcyclicGraph':
+            const dagNodesOptions = integerVars.map(v => 
+                `<option value="${v}" ${v === moduleData.nodesVar ? 'selected' : ''}>${v}</option>`
+            ).join('');
+            
+            return `
+                <div class="param-group">
+                    <label class="param-label">nodes variable:</label>
+                    <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'nodesVar', this.value)">
+                        <option value="">select variable...</option>
+                        ${dagNodesOptions}
+                    </select>
+                </div>
+            `;
+        
         default:
             return '';
     }
@@ -795,6 +907,126 @@ function cycleGraphConnectivity(moduleId) {
     // Update button display
     const moduleElement = document.querySelector(`[data-module-id="${moduleId}"]`);
     moduleElement.querySelector('.connectivity-btn').textContent = moduleData.connectivity;
+    
+    updateDataModel();
+}
+
+function cycleBipartiteFormat(moduleId) {
+    const moduleData = findModuleById(moduleId);
+    if (!moduleData || moduleData.type !== 'BipartiteGraph') return;
+
+    const formats = ['list', 'adj-mat'];
+    const currentIndex = formats.indexOf(moduleData.format);
+    const nextIndex = (currentIndex + 1) % formats.length;
+    moduleData.format = formats[nextIndex];
+    
+    const moduleElement = document.querySelector(`[data-module-id="${moduleId}"]`);
+    moduleElement.querySelector('.format-btn').textContent = moduleData.format;
+    
+    updateDataModel();
+}
+
+function cycleBipartiteDirection(moduleId) {
+    const moduleData = findModuleById(moduleId);
+    if (!moduleData || moduleData.type !== 'BipartiteGraph') return;
+
+    const directions = ['dir', 'undir'];
+    const currentIndex = directions.indexOf(moduleData.direction);
+    const nextIndex = (currentIndex + 1) % directions.length;
+    moduleData.direction = directions[nextIndex];
+    
+    const moduleElement = document.querySelector(`[data-module-id="${moduleId}"]`);
+    moduleElement.querySelector('.direction-btn').textContent = moduleData.direction;
+    
+    updateDataModel();
+}
+
+function cycleBipartiteWeight(moduleId) {
+    const moduleData = findModuleById(moduleId);
+    if (!moduleData || moduleData.type !== 'BipartiteGraph') return;
+
+    const weights = ['w', 'no-w'];
+    const currentIndex = weights.indexOf(moduleData.weighted);
+    const nextIndex = (currentIndex + 1) % weights.length;
+    moduleData.weighted = weights[nextIndex];
+    
+    const moduleElement = document.querySelector(`[data-module-id="${moduleId}"]`);
+    moduleElement.querySelector('.weight-btn').textContent = moduleData.weighted;
+    
+    updateDataModel();
+}
+
+function cycleBipartiteConnectivity(moduleId) {
+    const moduleData = findModuleById(moduleId);
+    if (!moduleData || moduleData.type !== 'BipartiteGraph') return;
+
+    const connectivities = ['conn', 'disconn'];
+    const currentIndex = connectivities.indexOf(moduleData.connectivity);
+    const nextIndex = (currentIndex + 1) % connectivities.length;
+    moduleData.connectivity = connectivities[nextIndex];
+    
+    const moduleElement = document.querySelector(`[data-module-id="${moduleId}"]`);
+    moduleElement.querySelector('.connectivity-btn').textContent = moduleData.connectivity;
+    
+    updateDataModel();
+}
+
+function cycleTreeFormat(moduleId) {
+    const moduleData = findModuleById(moduleId);
+    if (!moduleData || moduleData.type !== 'RandomTree') return;
+
+    const formats = ['list', 'parent-arr'];
+    const currentIndex = formats.indexOf(moduleData.format);
+    const nextIndex = (currentIndex + 1) % formats.length;
+    moduleData.format = formats[nextIndex];
+    
+    const moduleElement = document.querySelector(`[data-module-id="${moduleId}"]`);
+    moduleElement.querySelector('.format-btn').textContent = moduleData.format;
+    
+    updateDataModel();
+}
+
+function cycleTreeWeight(moduleId) {
+    const moduleData = findModuleById(moduleId);
+    if (!moduleData || moduleData.type !== 'RandomTree') return;
+
+    const weights = ['w', 'no-w'];
+    const currentIndex = weights.indexOf(moduleData.weighted);
+    const nextIndex = (currentIndex + 1) % weights.length;
+    moduleData.weighted = weights[nextIndex];
+    
+    const moduleElement = document.querySelector(`[data-module-id="${moduleId}"]`);
+    moduleElement.querySelector('.weight-btn').textContent = moduleData.weighted;
+    
+    updateDataModel();
+}
+
+function cycleDagFormat(moduleId) {
+    const moduleData = findModuleById(moduleId);
+    if (!moduleData || moduleData.type !== 'DirectedAcyclicGraph') return;
+
+    const formats = ['list', 'parent-arr'];
+    const currentIndex = formats.indexOf(moduleData.format);
+    const nextIndex = (currentIndex + 1) % formats.length;
+    moduleData.format = formats[nextIndex];
+    
+    const moduleElement = document.querySelector(`[data-module-id="${moduleId}"]`);
+    moduleElement.querySelector('.format-btn').textContent = moduleData.format;
+    
+    updateDataModel();
+}
+
+function cycleDagWeight(moduleId) {
+    const moduleData = findModuleById(moduleId);
+    if (!moduleData || moduleData.type !== 'DirectedAcyclicGraph') return;
+
+    const weights = ['w', 'no-w'];
+    const currentIndex = weights.indexOf(moduleData.weighted);
+    const nextIndex = (currentIndex + 1) % weights.length;
+    moduleData.weighted = weights[nextIndex];
+    
+    const moduleElement = document.querySelector(`[data-module-id="${moduleId}"]`);
+    moduleElement.querySelector('.weight-btn').textContent = moduleData.weighted;
     
     updateDataModel();
 }
@@ -1016,6 +1248,23 @@ function extractModuleData(element) {
                 cleanData.weighted = moduleData.weighted;
                 cleanData.connectivity = moduleData.connectivity;
                 break;
+            case 'BipartiteGraph':
+                cleanData.nodesVar = moduleData.nodesVar;
+                cleanData.format = moduleData.format;
+                cleanData.direction = moduleData.direction;
+                cleanData.weighted = moduleData.weighted;
+                cleanData.connectivity = moduleData.connectivity;
+                break;
+            case 'RandomTree':
+                cleanData.nodesVar = moduleData.nodesVar;
+                cleanData.format = moduleData.format;
+                cleanData.weighted = moduleData.weighted;
+                break;
+            case 'DirectedAcyclicGraph':
+                cleanData.nodesVar = moduleData.nodesVar;
+                cleanData.format = moduleData.format;
+                cleanData.weighted = moduleData.weighted;
+                break;
             case 'Repeat':
                 cleanData.timesVar = moduleData.timesVar;
                 cleanData.modules = moduleData.modules || [];
@@ -1046,7 +1295,7 @@ function generateJSON() {
 function clearAll() {
     document.getElementById('root-scope').innerHTML = '<div class="scope-label">root scope</div>';
     dataModel.test = [];
-    moduleCounters = { FixedVariable: 0, RandomVariable: 0, RandomArray: 0, Repeat: 0, Permutation: 0, MazeMatrix: 0, SparseMatrix: 0, RandomGraph: 0 };
+    moduleCounters = { FixedVariable: 0, RandomVariable: 0, RandomArray: 0, Repeat: 0, Permutation: 0, MazeMatrix: 0, SparseMatrix: 0, RandomGraph: 0, BipartiteGraph: 0, RandomTree: 0, DirectedAcyclicGraph: 0 };
     moduleIdCounter = 1;
     closeParameterPanel();
     document.getElementById('json-output').style.display = 'none';
