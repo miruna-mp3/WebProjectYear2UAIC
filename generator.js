@@ -6,7 +6,10 @@ let moduleCounters = {
     RandomVariable: 0,
     RandomArray: 0,
     Repeat: 0,
-    Permutation: 0
+    Permutation: 0,
+    MazeMatrix: 0,
+    SparseMatrix: 0,
+    RandomGraph: 0
 };
 
 let draggedElement = null;
@@ -52,6 +55,34 @@ const moduleTemplates = {
         orderVar: '',
         visible: true,
         separator: 'space'
+    },
+    MazeMatrix: {
+        type: 'MazeMatrix',
+        rowsVar: '',
+        colsVar: '',
+        visible: true,
+        separator: 'newline'
+    },
+    SparseMatrix: {
+        type: 'SparseMatrix',
+        rowsVar: '',
+        colsVar: '',
+        minValueVar: '',
+        maxValueVar: '',
+        zeroValuesVar: '',
+        visible: true,
+        separator: 'newline'
+    },
+    RandomGraph: {
+        type: 'RandomGraph',
+        nodesVar: '',
+        edgesVar: '',
+        format: 'list',
+        direction: 'dir',
+        weighted: 'w',
+        connectivity: 'conn',
+        visible: true,
+        separator: 'newline'
     },
     Repeat: {
         type: 'Repeat',
@@ -195,7 +226,10 @@ function getDisplayName(type, number) {
         'RandomVariable': 'random variable', 
         'RandomArray': 'random array',
         'Repeat': 'repeat',
-        'Permutation': 'permutation'
+        'Permutation': 'permutation',
+        'MazeMatrix': 'maze matrix',
+        'SparseMatrix': 'sparse matrix',
+        'RandomGraph': 'random graph'
     };
     return `${typeMap[type]} ${number}`;
 }
@@ -248,6 +282,37 @@ function generateModuleHTML(moduleData) {
         controlsHTML = `
             <div class="module-controls">
                 <button class="name-btn" onclick="toggleParameterPanel('${moduleData.id}')">${moduleData.name}</button>
+                <button class="visibility-btn ${visibilityClass}" onclick="toggleVisibility('${moduleData.id}')"></button>
+                <button class="separator-btn" style="display: ${separatorDisplay}" onclick="cycleSeparator('${moduleData.id}')">${moduleData.separator}</button>
+                <button class="delete-btn" onclick="deleteModule('${moduleData.id}')">×</button>
+            </div>
+        `;
+    } else if (moduleData.type === 'MazeMatrix') {
+        controlsHTML = `
+            <div class="module-controls">
+                <button class="name-btn" onclick="toggleParameterPanel('${moduleData.id}')">${moduleData.name}</button>
+                <button class="visibility-btn ${visibilityClass}" onclick="toggleVisibility('${moduleData.id}')"></button>
+                <button class="separator-btn" style="display: ${separatorDisplay}" onclick="cycleSeparator('${moduleData.id}')">${moduleData.separator}</button>
+                <button class="delete-btn" onclick="deleteModule('${moduleData.id}')">×</button>
+            </div>
+        `;
+    } else if (moduleData.type === 'SparseMatrix') {
+        controlsHTML = `
+            <div class="module-controls">
+                <button class="name-btn" onclick="toggleParameterPanel('${moduleData.id}')">${moduleData.name}</button>
+                <button class="visibility-btn ${visibilityClass}" onclick="toggleVisibility('${moduleData.id}')"></button>
+                <button class="separator-btn" style="display: ${separatorDisplay}" onclick="cycleSeparator('${moduleData.id}')">${moduleData.separator}</button>
+                <button class="delete-btn" onclick="deleteModule('${moduleData.id}')">×</button>
+            </div>
+        `;
+    } else if (moduleData.type === 'RandomGraph') {
+        controlsHTML = `
+            <div class="module-controls">
+                <button class="name-btn" onclick="toggleParameterPanel('${moduleData.id}')">${moduleData.name}</button>
+                <button class="format-btn" onclick="cycleGraphFormat('${moduleData.id}')">${moduleData.format}</button>
+                <button class="direction-btn" onclick="cycleGraphDirection('${moduleData.id}')">${moduleData.direction}</button>
+                <button class="weight-btn" onclick="cycleGraphWeight('${moduleData.id}')">${moduleData.weighted}</button>
+                <button class="connectivity-btn" onclick="cycleGraphConnectivity('${moduleData.id}')">${moduleData.connectivity}</button>
                 <button class="visibility-btn ${visibilityClass}" onclick="toggleVisibility('${moduleData.id}')"></button>
                 <button class="separator-btn" style="display: ${separatorDisplay}" onclick="cycleSeparator('${moduleData.id}')">${moduleData.separator}</button>
                 <button class="delete-btn" onclick="deleteModule('${moduleData.id}')">×</button>
@@ -438,6 +503,119 @@ function generateParameterHTML(moduleData) {
                 </div>
             `;
         
+        case 'MazeMatrix':
+            const mazeRowsOptions = integerVars.map(v => 
+                `<option value="${v}" ${v === moduleData.rowsVar ? 'selected' : ''}>${v}</option>`
+            ).join('');
+            const mazeColsOptions = integerVars.map(v => 
+                `<option value="${v}" ${v === moduleData.colsVar ? 'selected' : ''}>${v}</option>`
+            ).join('');
+            
+            return `
+                <div class="param-row">
+                    <div class="param-group">
+                        <label class="param-label">rows variable:</label>
+                        <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'rowsVar', this.value)">
+                            <option value="">select variable...</option>
+                            ${mazeRowsOptions}
+                        </select>
+                    </div>
+                    <div class="param-group">
+                        <label class="param-label">cols variable:</label>
+                        <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'colsVar', this.value)">
+                            <option value="">select variable...</option>
+                            ${mazeColsOptions}
+                        </select>
+                    </div>
+                </div>
+            `;
+        
+        case 'SparseMatrix':
+            const sparseRowsOptions = integerVars.map(v => 
+                `<option value="${v}" ${v === moduleData.rowsVar ? 'selected' : ''}>${v}</option>`
+            ).join('');
+            const sparseColsOptions = integerVars.map(v => 
+                `<option value="${v}" ${v === moduleData.colsVar ? 'selected' : ''}>${v}</option>`
+            ).join('');
+            const sparseMinOptions = integerVars.map(v => 
+                `<option value="${v}" ${v === moduleData.minValueVar ? 'selected' : ''}>${v}</option>`
+            ).join('');
+            const sparseMaxOptions = integerVars.map(v => 
+                `<option value="${v}" ${v === moduleData.maxValueVar ? 'selected' : ''}>${v}</option>`
+            ).join('');
+            const sparseZeroOptions = integerVars.map(v => 
+                `<option value="${v}" ${v === moduleData.zeroValuesVar ? 'selected' : ''}>${v}</option>`
+            ).join('');
+            
+            return `
+                <div class="param-row">
+                    <div class="param-group">
+                        <label class="param-label">rows variable:</label>
+                        <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'rowsVar', this.value)">
+                            <option value="">select variable...</option>
+                            ${sparseRowsOptions}
+                        </select>
+                    </div>
+                    <div class="param-group">
+                        <label class="param-label">cols variable:</label>
+                        <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'colsVar', this.value)">
+                            <option value="">select variable...</option>
+                            ${sparseColsOptions}
+                        </select>
+                    </div>
+                </div>
+                <div class="param-row">
+                    <div class="param-group">
+                        <label class="param-label">min value variable:</label>
+                        <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'minValueVar', this.value)">
+                            <option value="">select variable...</option>
+                            ${sparseMinOptions}
+                        </select>
+                    </div>
+                    <div class="param-group">
+                        <label class="param-label">max value variable:</label>
+                        <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'maxValueVar', this.value)">
+                            <option value="">select variable...</option>
+                            ${sparseMaxOptions}
+                        </select>
+                    </div>
+                </div>
+                <div class="param-group">
+                    <label class="param-label">zero values variable:</label>
+                    <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'zeroValuesVar', this.value)">
+                        <option value="">select variable...</option>
+                        ${sparseZeroOptions}
+                    </select>
+                </div>
+            `;
+        
+        case 'RandomGraph':
+            const graphNodesOptions = integerVars.map(v => 
+                `<option value="${v}" ${v === moduleData.nodesVar ? 'selected' : ''}>${v}</option>`
+            ).join('');
+            const graphEdgesOptions = integerVars.map(v => 
+                `<option value="${v}" ${v === moduleData.edgesVar ? 'selected' : ''}>${v}</option>`
+            ).join('');
+            
+            return `
+                <div class="param-row">
+                    <div class="param-group">
+                        <label class="param-label">nodes variable:</label>
+                        <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'nodesVar', this.value)">
+                            <option value="">select variable...</option>
+                            ${graphNodesOptions}
+                        </select>
+                    </div>
+                    <div class="param-group">
+                        <label class="param-label">edges variable:</label>
+                        <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'edgesVar', this.value)">
+                            <option value="">select variable...</option>
+                            ${graphEdgesOptions}
+                        </select>
+                    </div>
+                </div>
+            `;
+        
         default:
             return '';
     }
@@ -553,6 +731,70 @@ function cycleSortType(moduleId) {
     // Update button display
     const moduleElement = document.querySelector(`[data-module-id="${moduleId}"]`);
     moduleElement.querySelector('.sort-btn').textContent = moduleData.sortType;
+    
+    updateDataModel();
+}
+
+function cycleGraphFormat(moduleId) {
+    const moduleData = findModuleById(moduleId);
+    if (!moduleData || moduleData.type !== 'RandomGraph') return;
+
+    const formats = ['list', 'adj-mat'];
+    const currentIndex = formats.indexOf(moduleData.format);
+    const nextIndex = (currentIndex + 1) % formats.length;
+    moduleData.format = formats[nextIndex];
+    
+    // Update button display
+    const moduleElement = document.querySelector(`[data-module-id="${moduleId}"]`);
+    moduleElement.querySelector('.format-btn').textContent = moduleData.format;
+    
+    updateDataModel();
+}
+
+function cycleGraphDirection(moduleId) {
+    const moduleData = findModuleById(moduleId);
+    if (!moduleData || moduleData.type !== 'RandomGraph') return;
+
+    const directions = ['dir', 'undir'];
+    const currentIndex = directions.indexOf(moduleData.direction);
+    const nextIndex = (currentIndex + 1) % directions.length;
+    moduleData.direction = directions[nextIndex];
+    
+    // Update button display
+    const moduleElement = document.querySelector(`[data-module-id="${moduleId}"]`);
+    moduleElement.querySelector('.direction-btn').textContent = moduleData.direction;
+    
+    updateDataModel();
+}
+
+function cycleGraphWeight(moduleId) {
+    const moduleData = findModuleById(moduleId);
+    if (!moduleData || moduleData.type !== 'RandomGraph') return;
+
+    const weights = ['w', 'no-w'];
+    const currentIndex = weights.indexOf(moduleData.weighted);
+    const nextIndex = (currentIndex + 1) % weights.length;
+    moduleData.weighted = weights[nextIndex];
+    
+    // Update button display
+    const moduleElement = document.querySelector(`[data-module-id="${moduleId}"]`);
+    moduleElement.querySelector('.weight-btn').textContent = moduleData.weighted;
+    
+    updateDataModel();
+}
+
+function cycleGraphConnectivity(moduleId) {
+    const moduleData = findModuleById(moduleId);
+    if (!moduleData || moduleData.type !== 'RandomGraph') return;
+
+    const connectivities = ['conn', 'disconn'];
+    const currentIndex = connectivities.indexOf(moduleData.connectivity);
+    const nextIndex = (currentIndex + 1) % connectivities.length;
+    moduleData.connectivity = connectivities[nextIndex];
+    
+    // Update button display
+    const moduleElement = document.querySelector(`[data-module-id="${moduleId}"]`);
+    moduleElement.querySelector('.connectivity-btn').textContent = moduleData.connectivity;
     
     updateDataModel();
 }
@@ -755,6 +997,25 @@ function extractModuleData(element) {
                 cleanData.lengthVar = moduleData.lengthVar;
                 cleanData.orderVar = moduleData.orderVar;
                 break;
+            case 'MazeMatrix':
+                cleanData.rowsVar = moduleData.rowsVar;
+                cleanData.colsVar = moduleData.colsVar;
+                break;
+            case 'SparseMatrix':
+                cleanData.rowsVar = moduleData.rowsVar;
+                cleanData.colsVar = moduleData.colsVar;
+                cleanData.minValueVar = moduleData.minValueVar;
+                cleanData.maxValueVar = moduleData.maxValueVar;
+                cleanData.zeroValuesVar = moduleData.zeroValuesVar;
+                break;
+            case 'RandomGraph':
+                cleanData.nodesVar = moduleData.nodesVar;
+                cleanData.edgesVar = moduleData.edgesVar;
+                cleanData.format = moduleData.format;
+                cleanData.direction = moduleData.direction;
+                cleanData.weighted = moduleData.weighted;
+                cleanData.connectivity = moduleData.connectivity;
+                break;
             case 'Repeat':
                 cleanData.timesVar = moduleData.timesVar;
                 cleanData.modules = moduleData.modules || [];
@@ -785,7 +1046,7 @@ function generateJSON() {
 function clearAll() {
     document.getElementById('root-scope').innerHTML = '<div class="scope-label">root scope</div>';
     dataModel.test = [];
-    moduleCounters = { FixedVariable: 0, RandomVariable: 0, RandomArray: 0, Repeat: 0, Permutation: 0 };
+    moduleCounters = { FixedVariable: 0, RandomVariable: 0, RandomArray: 0, Repeat: 0, Permutation: 0, MazeMatrix: 0, SparseMatrix: 0, RandomGraph: 0 };
     moduleIdCounter = 1;
     closeParameterPanel();
     document.getElementById('json-output').style.display = 'none';
