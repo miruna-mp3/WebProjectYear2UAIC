@@ -418,8 +418,7 @@ function generateModuleHTML(moduleData) {
     let scopeHTML = '';
     if (moduleData.type === 'Repeat') {
         scopeHTML = `
-            <div class="repeat-scope" data-scope="repeat-${moduleData.id}">
-                <div class="scope-label">repeat scope</div>
+            <div class="repeat-scope" data-scope="repeat-${moduleData.id}"> 
             </div>
         `;
     }
@@ -1292,8 +1291,7 @@ function generateJSON() {
     output.style.display = 'block';
 }
 
-function clearAll() {
-    document.getElementById('root-scope').innerHTML = '<div class="scope-label">root scope</div>';
+function clearAll() { 
     dataModel.test = [];
     moduleCounters = { FixedVariable: 0, RandomVariable: 0, RandomArray: 0, Repeat: 0, Permutation: 0, MazeMatrix: 0, SparseMatrix: 0, RandomGraph: 0, BipartiteGraph: 0, RandomTree: 0, DirectedAcyclicGraph: 0 };
     moduleIdCounter = 1;
