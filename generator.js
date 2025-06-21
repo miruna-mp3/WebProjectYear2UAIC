@@ -5,7 +5,8 @@ let moduleCounters = {
     FixedVariable: 0,
     RandomVariable: 0,
     RandomArray: 0,
-    Repeat: 0
+    Repeat: 0,
+    Permutation: 0
 };
 
 let draggedElement = null;
@@ -38,10 +39,17 @@ const moduleTemplates = {
         type: 'RandomArray',
         dataType: 'int',
         lengthVar: '',
-        min: 1,
-        max: 100,
+        minVar: '',
+        maxVar: '',
         multivalType: 'distinct',
         sortType: 'none',
+        visible: true,
+        separator: 'space'
+    },
+    Permutation: {
+        type: 'Permutation',
+        lengthVar: '',
+        orderVar: '',
         visible: true,
         separator: 'space'
     },
@@ -186,7 +194,8 @@ function getDisplayName(type, number) {
         'FixedVariable': 'fixed variable',
         'RandomVariable': 'random variable', 
         'RandomArray': 'random array',
-        'Repeat': 'repeat'
+        'Repeat': 'repeat',
+        'Permutation': 'permutation'
     };
     return `${typeMap[type]} ${number}`;
 }
@@ -230,6 +239,15 @@ function generateModuleHTML(moduleData) {
                 <button class="type-btn" onclick="cycleDataType('${moduleData.id}')">${moduleData.dataType}</button>
                 <button class="multival-btn" onclick="cycleMultivalType('${moduleData.id}')">${moduleData.multivalType || 'distinct'}</button>
                 <button class="sort-btn" onclick="cycleSortType('${moduleData.id}')">${moduleData.sortType || 'none'}</button>
+                <button class="visibility-btn ${visibilityClass}" onclick="toggleVisibility('${moduleData.id}')"></button>
+                <button class="separator-btn" style="display: ${separatorDisplay}" onclick="cycleSeparator('${moduleData.id}')">${moduleData.separator}</button>
+                <button class="delete-btn" onclick="deleteModule('${moduleData.id}')">×</button>
+            </div>
+        `;
+    } else if (moduleData.type === 'Permutation') {
+        controlsHTML = `
+            <div class="module-controls">
+                <button class="name-btn" onclick="toggleParameterPanel('${moduleData.id}')">${moduleData.name}</button>
                 <button class="visibility-btn ${visibilityClass}" onclick="toggleVisibility('${moduleData.id}')"></button>
                 <button class="separator-btn" style="display: ${separatorDisplay}" onclick="cycleSeparator('${moduleData.id}')">${moduleData.separator}</button>
                 <button class="delete-btn" onclick="deleteModule('${moduleData.id}')">×</button>
@@ -345,6 +363,12 @@ function generateParameterHTML(moduleData) {
             const lengthOptions = integerVars.map(v => 
                 `<option value="${v}" ${v === moduleData.lengthVar ? 'selected' : ''}>${v}</option>`
             ).join('');
+            const minOptions = integerVars.map(v => 
+                `<option value="${v}" ${v === moduleData.minVar ? 'selected' : ''}>${v}</option>`
+            ).join('');
+            const maxOptions = integerVars.map(v => 
+                `<option value="${v}" ${v === moduleData.maxVar ? 'selected' : ''}>${v}</option>`
+            ).join('');
             
             return `
                 <div class="param-group">
@@ -356,14 +380,18 @@ function generateParameterHTML(moduleData) {
                 </div>
                 <div class="param-row">
                     <div class="param-group">
-                        <label class="param-label">min:</label>
-                        <input type="number" class="param-input" value="${moduleData.min}" 
-                                onchange="updateModuleParameter('${moduleData.id}', 'min', parseInt(this.value))">
+                        <label class="param-label">min variable:</label>
+                        <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'minVar', this.value)">
+                            <option value="">select variable...</option>
+                            ${minOptions}
+                        </select>
                     </div>
                     <div class="param-group">
-                        <label class="param-label">max:</label>
-                        <input type="number" class="param-input" value="${moduleData.max}" 
-                                onchange="updateModuleParameter('${moduleData.id}', 'max', parseInt(this.value))">
+                        <label class="param-label">max variable:</label>
+                        <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'maxVar', this.value)">
+                            <option value="">select variable...</option>
+                            ${maxOptions}
+                        </select>
                     </div>
                 </div>
             `;
@@ -380,6 +408,33 @@ function generateParameterHTML(moduleData) {
                         <option value="">select variable...</option>
                         ${timesOptions}
                     </select>
+                </div>
+            `;
+        
+        case 'Permutation':
+            const permLengthOptions = integerVars.map(v => 
+                `<option value="${v}" ${v === moduleData.lengthVar ? 'selected' : ''}>${v}</option>`
+            ).join('');
+            const orderOptions = integerVars.map(v => 
+                `<option value="${v}" ${v === moduleData.orderVar ? 'selected' : ''}>${v}</option>`
+            ).join('');
+            
+            return `
+                <div class="param-row">
+                    <div class="param-group">
+                        <label class="param-label">length variable:</label>
+                        <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'lengthVar', this.value)">
+                            <option value="">select variable...</option>
+                            ${permLengthOptions}
+                        </select>
+                    </div>
+                    <div class="param-group">
+                        <label class="param-label">order variable:</label>
+                        <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'orderVar', this.value)">
+                            <option value="">select variable...</option>
+                            ${orderOptions}
+                        </select>
+                    </div>
                 </div>
             `;
         
@@ -671,10 +726,14 @@ function extractModuleData(element) {
             id: moduleData.id,
             name: moduleData.name,
             type: moduleData.type,
-            dataType: moduleData.dataType,
             visible: moduleData.visible,
             separator: moduleData.separator
         };
+        
+        // Add dataType for modules that have it
+        if (moduleData.dataType !== undefined) {
+            cleanData.dataType = moduleData.dataType;
+        }
         
         // Add type-specific properties
         switch (moduleData.type) {
@@ -687,10 +746,14 @@ function extractModuleData(element) {
                 break;
             case 'RandomArray':
                 cleanData.lengthVar = moduleData.lengthVar;
-                cleanData.min = moduleData.min;
-                cleanData.max = moduleData.max;
+                cleanData.minVar = moduleData.minVar;
+                cleanData.maxVar = moduleData.maxVar;
                 cleanData.multivalType = moduleData.multivalType;
                 cleanData.sortType = moduleData.sortType;
+                break;
+            case 'Permutation':
+                cleanData.lengthVar = moduleData.lengthVar;
+                cleanData.orderVar = moduleData.orderVar;
                 break;
             case 'Repeat':
                 cleanData.timesVar = moduleData.timesVar;
@@ -720,9 +783,9 @@ function generateJSON() {
 }
 
 function clearAll() {
-    document.getElementById('root-scope').innerHTML = '<div class="scope-label">test scope</div>';
+    document.getElementById('root-scope').innerHTML = '<div class="scope-label">root scope</div>';
     dataModel.test = [];
-    moduleCounters = { FixedVariable: 0, RandomVariable: 0, RandomArray: 0, Repeat: 0 };
+    moduleCounters = { FixedVariable: 0, RandomVariable: 0, RandomArray: 0, Repeat: 0, Permutation: 0 };
     moduleIdCounter = 1;
     closeParameterPanel();
     document.getElementById('json-output').style.display = 'none';
