@@ -782,7 +782,21 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
                                 return `formattedResults.push(String(vars['${sanitizeName(m.name)}']));`;
                             }
                         }).join('\n')}
-                        repeatResults.push(formattedResults.join(' ')); // Always use space between items in a repeat iteration
+                        
+                        let iterationResult = '';
+                        for (let i = 0; i < formattedResults.length; i++) {
+                            iterationResult += formattedResults[i];
+                            
+                                const moduleIdx = i;
+                                ${visibleModules.map((m, idx) => {
+                                    const modSep = m.separator === 'newline' ? '\\\\n' : 
+                                                  m.separator === 'space' ? ' ' : 
+                                                  m.separator === 'none' ? '' : '\\\\n';
+                                    return `if (moduleIdx === ${idx}) iterationResult += '${modSep}';`;
+                                }).join('\n                                ')}
+                            
+                        }
+                        repeatResults.push(iterationResult);
                     }
                     const repeatSeparator = '${mod.separator === 'newline' ? '\\n' : mod.separator === 'space' ? ' ' : mod.separator === 'none' ? '' : '\\n'}';
                     if (repeatSeparator === '') {

@@ -4,3 +4,4 @@ final_comprehensive_test.js
 .claude/settings.local.json
 test-generator.js
 test_repeat_fix.js
+test_repeat_separators.js
