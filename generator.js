@@ -1578,7 +1578,7 @@ function storeJSON() {
     updateDataModel(); 
 }
 
-function generateTest() {
+function generateTest(returnSource = false) {
     updateDataModel();
     
     if (!window.generateTestFromModel) {
@@ -1586,31 +1586,41 @@ function generateTest() {
         script.src = 'test-generator.js?t=' + Date.now(); // Add timestamp to prevent caching
         script.onload = () => {
             console.log('test-generator.js loaded successfully');
-            executeTestGeneration();
+            executeTestGeneration(returnSource);
         };
         script.onerror = () => {
             alert('Failed to load test-generator.js');
         };
         document.head.appendChild(script);
     } else {
-        executeTestGeneration();
+        executeTestGeneration(returnSource);
     }
 }
 
-function executeTestGeneration() {
+function executeTestGeneration(returnSource = false) {
     try {
         if (!window.generateTestFromModel) {
             throw new Error('Test generator not loaded');
         }
         const seed = Date.now();
-        const result = window.generateTestFromModel(dataModel, seed);
-        const output = document.getElementById('json-output');
-        output.textContent = result;
-        output.style.display = 'block';
         
-        // Visualize graphs if any were captured
-        if (window.lastGeneratedGraphs && window.lastGeneratedGraphs.length > 0) {
-            visualizeGraphs(window.lastGeneratedGraphs);
+        if (returnSource) {
+            // get the JS source code instead of executing it
+            const jsSource = window.generateJSSourceFromModel(dataModel, seed);
+            const output = document.getElementById('json-output');
+            output.textContent = jsSource;
+            output.style.display = 'block';
+        } else {
+            // normal just generate and run
+            const result = window.generateTestFromModel(dataModel, seed);
+            const output = document.getElementById('json-output');
+            output.textContent = result;
+            output.style.display = 'block';
+            
+            // visualize graphs if any were captured
+            if (window.lastGeneratedGraphs && window.lastGeneratedGraphs.length > 0) {
+                visualizeGraphs(window.lastGeneratedGraphs);
+            }
         }
     } catch (error) {
         alert(`Test generation failed:\n${error.message}`);
@@ -1688,7 +1698,7 @@ function handleTouchStart(e) {
     }
 }
 function generateCode() {
-    return null;
+    generateTest(true); // true = return JS source code instead of executing
 }
 
 function uploadTest() {

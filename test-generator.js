@@ -926,5 +926,38 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
     }
 };
 
+const generateJSSourceFromModel = (dataModel, seed = Date.now()) => {
+    // vall the existing generateTestFromModel but intercept the JavaScript source
+    const originalFunction = window.Function;
+    let capturedSource = '';
+    
+    // ttemporarily override Function constructor to capture the source
+    window.Function = function(param, source) {
+        capturedSource = source;
+        return originalFunction.call(this, param, source);
+    };
+    
+    try { 
+        generateTestFromModel(dataModel, seed);
+        
+        // testore original Function
+        window.Function = originalFunction;
+        
+        // teturn the captured source with mulberry32 function
+        return `const mulberry32 = ${mulberry32.toString()};
+
+const generateTest = (seed = ${seed}) => {${capturedSource}
+};
+
+// Execute the test
+console.log(generateTest());`;
+    } catch (error) {
+        // Restore original Function in case of error
+        window.Function = originalFunction;
+        throw error;
+    }
+};
+
 window.generateTestFromModel = generateTestFromModel;
+window.generateJSSourceFromModel = generateJSSourceFromModel;
 window.lastGeneratedGraphs = [];
