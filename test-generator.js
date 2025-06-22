@@ -13,6 +13,9 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
     const modules = dataModel.test || [];
     if (!modules.length) return '';
     
+    // Reset graph capture
+    window.lastGeneratedGraphs = [];
+    
     const varNames = new Set();
     const collectVarNames = modules => {
         modules.forEach(mod => {
@@ -500,6 +503,21 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
                 `;
             }
             
+            code += `
+                // Capture graph data
+                if (n <= 10 && window.lastGeneratedGraphs) {
+                    window.lastGeneratedGraphs.push({
+                        type: 'RandomGraph',
+                        name: '${mod.name}',
+                        nodes: n,
+                        edges: edges.slice(),
+                        directed: ${mod.direction === 'dir'},
+                        weighted: ${mod.weighted === 'w'},
+                        format: '${mod.format}'
+                    });
+                }
+            `;
+            
             if (mod.format === 'adj-mat') {
                 code += `
                     const matrix = Array(n).fill().map(() => Array(n).fill(${mod.weighted === 'w' ? '0' : '0'}));
@@ -588,6 +606,24 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
                 `;
             }
             
+            code += `
+                // Capture graph data
+                if (n <= 10 && window.lastGeneratedGraphs) {
+                    window.lastGeneratedGraphs.push({
+                        type: 'BipartiteGraph',
+                        name: '${mod.name}',
+                        nodes: n,
+                        edges: edges.slice(),
+                        directed: ${mod.direction === 'dir'},
+                        weighted: ${mod.weighted === 'w'},
+                        format: '${mod.format}',
+                        bipartite: true,
+                        leftNodes: L,
+                        rightNodes: R
+                    });
+                }
+            `;
+            
             if (mod.format === 'adj-mat') {
                 code += `
                     const matrix = Array(n).fill().map(() => Array(n).fill(${mod.weighted === 'w' ? '0' : '0'}));
@@ -650,6 +686,20 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
                 `;
             }
             
+            code += `
+                // Capture graph data
+                if (n <= 10 && window.lastGeneratedGraphs) {
+                    window.lastGeneratedGraphs.push({
+                        type: 'RandomTree',
+                        name: '${mod.name}',
+                        nodes: n,
+                        edges: edges.slice(),
+                        directed: false,
+                        weighted: ${mod.weighted === 'w'}
+                    });
+                }
+            `;
+            
             if (mod.format === 'parent-arr') {
                 code += `
                     const parent = Array(n).fill(-1);
@@ -697,6 +747,24 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
                         parent[i] = Math.floor(rng() * i);
                     }
                     
+                    // Capture graph data - convert parent array to edges for visualization
+                    if (n <= 10 && window.lastGeneratedGraphs) {
+                        const edges = [];
+                        for (let i = 1; i < n; i++) {
+                            if (parent[i] !== -1) {
+                                edges.push([parent[i], i${mod.weighted === 'w' ? ', 0' : ''}]);
+                            }
+                        }
+                        window.lastGeneratedGraphs.push({
+                            type: 'DirectedAcyclicGraph',
+                            name: '${mod.name}',
+                            nodes: n,
+                            edges: edges,
+                            directed: true,
+                            weighted: ${mod.weighted === 'w'}
+                        });
+                    }
+                    
                     return parent;
                 `;
                 return code;
@@ -723,7 +791,21 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
                     `;
                 }
                 
-                code += 'return edges;';
+                code += `
+                    // Capture graph data
+                    if (n <= 10 && window.lastGeneratedGraphs) {
+                        window.lastGeneratedGraphs.push({
+                            type: 'DirectedAcyclicGraph',
+                            name: '${mod.name}',
+                            nodes: n,
+                            edges: edges.slice(),
+                            directed: true,
+                            weighted: ${mod.weighted === 'w'}
+                        });
+                    }
+                    
+                    return edges;
+                `;
                 return code;
             }
         },
@@ -845,3 +927,4 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
 };
 
 window.generateTestFromModel = generateTestFromModel;
+window.lastGeneratedGraphs = [];

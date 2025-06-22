@@ -1607,6 +1607,11 @@ function executeTestGeneration() {
         const output = document.getElementById('json-output');
         output.textContent = result;
         output.style.display = 'block';
+        
+        // Visualize graphs if any were captured
+        if (window.lastGeneratedGraphs && window.lastGeneratedGraphs.length > 0) {
+            visualizeGraphs(window.lastGeneratedGraphs);
+        }
     } catch (error) {
         alert(`Test generation failed:\n${error.message}`);
         console.error('Test generation error:', error);
@@ -1760,6 +1765,259 @@ function rebuildWorkspaceFromData() {
     Object.keys(moduleCounters).forEach(type => {
         moduleCounters[type] = typeCount[type] || 0;
     });
+}
+
+function visualizeGraphs(graphs) {
+    // Filter out non-graph data
+    const validGraphs = graphs.filter(g => g && g.type && g.nodes <= 10);
+    
+    if (validGraphs.length === 0) {
+        return;
+    }
+    
+    // Open new window for visualization
+    const vizWindow = window.open('', 'Graph Visualization', 'width=1200,height=800');
+    
+    // Create HTML content
+    const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Graph Visualization</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 20px;
+                    background: #f5f5f5;
+                }
+                .container {
+                    background: white;
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                }
+                h1 {
+                    color: #333;
+                    margin-bottom: 20px;
+                }
+                .graph-container {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 20px;
+                    margin-bottom: 20px;
+                }
+                .graph {
+                    border: 1px solid #ddd;
+                    border-radius: 8px;
+                    padding: 10px;
+                    background: #fafafa;
+                }
+                .graph-title {
+                    font-weight: bold;
+                    color: #555;
+                    margin-bottom: 10px;
+                    text-align: center;
+                }
+                .download-btn {
+                    background: linear-gradient(45deg, #4299e1, #3182ce);
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-size: 16px;
+                    margin-top: 20px;
+                }
+                .download-btn:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(66, 153, 225, 0.3);
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>graphs</h1>
+                <div id="graphs" class="graph-container"></div>
+                <button class="download-btn" onclick="downloadSVG()">Download SVG</button>
+            </div>
+            <script>${generateVisualizationScript(validGraphs)}</script>
+        </body>
+        </html>
+    `;
+    
+    vizWindow.document.write(html);
+    vizWindow.document.close();
+}
+
+function generateVisualizationScript(graphs) {
+    return `
+        const graphs = ${JSON.stringify(graphs)};
+        const svgGraphs = [];
+        
+        function createGraphSVG(graph, index) {
+            const width = 300;
+            const height = 300;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = 100;
+            
+            // Create SVG
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', width);
+            svg.setAttribute('height', height);
+            svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
+            
+            // Calculate node positions (circular layout)
+            const nodePositions = [];
+            for (let i = 0; i < graph.nodes; i++) {
+                const angle = (2 * Math.PI * i) / graph.nodes;
+                nodePositions.push({
+                    x: centerX + radius * Math.cos(angle),
+                    y: centerY + radius * Math.sin(angle)
+                });
+            }
+            
+            // Draw edges
+            const edgeGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            graph.edges.forEach(edge => {
+                const [from, to, weight] = edge;
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', nodePositions[from].x);
+                line.setAttribute('y1', nodePositions[from].y);
+                line.setAttribute('x2', nodePositions[to].x);
+                line.setAttribute('y2', nodePositions[to].y);
+                line.setAttribute('stroke', graph.directed ? '#ff6b6b' : '#4ecdc4');
+                line.setAttribute('stroke-width', '2');
+                
+                if (graph.directed) {
+                    line.setAttribute('marker-end', 'url(#arrowhead-' + index + ')');
+                }
+                
+                edgeGroup.appendChild(line);
+                
+                // Add weight label if weighted
+                if (graph.weighted && weight !== undefined) {
+                    const midX = (nodePositions[from].x + nodePositions[to].x) / 2;
+                    const midY = (nodePositions[from].y + nodePositions[to].y) / 2;
+                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    text.setAttribute('x', midX);
+                    text.setAttribute('y', midY);
+                    text.setAttribute('text-anchor', 'middle');
+                    text.setAttribute('fill', '#666');
+                    text.setAttribute('font-size', '12');
+                    text.setAttribute('font-weight', 'bold');
+                    text.setAttribute('dy', '-5');
+                    text.textContent = weight;
+                    
+                    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    rect.setAttribute('x', midX - 10);
+                    rect.setAttribute('y', midY - 15);
+                    rect.setAttribute('width', '20');
+                    rect.setAttribute('height', '15');
+                    rect.setAttribute('fill', 'white');
+                    rect.setAttribute('stroke', 'none');
+                    
+                    edgeGroup.appendChild(rect);
+                    edgeGroup.appendChild(text);
+                }
+            });
+            
+            svg.appendChild(edgeGroup);
+            
+            // Add arrow marker for directed graphs
+            if (graph.directed) {
+                const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+                const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+                marker.setAttribute('id', 'arrowhead-' + index);
+                marker.setAttribute('markerWidth', '10');
+                marker.setAttribute('markerHeight', '10');
+                marker.setAttribute('refX', '25');
+                marker.setAttribute('refY', '3');
+                marker.setAttribute('orient', 'auto');
+                
+                const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                polygon.setAttribute('points', '0 0, 6 3, 0 6');
+                polygon.setAttribute('fill', '#ff6b6b');
+                
+                marker.appendChild(polygon);
+                defs.appendChild(marker);
+                svg.appendChild(defs);
+            }
+            
+            // Draw nodes
+            const nodeGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            nodePositions.forEach((pos, i) => {
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', pos.x);
+                circle.setAttribute('cy', pos.y);
+                circle.setAttribute('r', '20');
+                circle.setAttribute('fill', '#667eea');
+                circle.setAttribute('stroke', '#5a67d8');
+                circle.setAttribute('stroke-width', '2');
+                
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', pos.x);
+                text.setAttribute('y', pos.y);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('dy', '5');
+                text.setAttribute('fill', 'white');
+                text.setAttribute('font-weight', 'bold');
+                text.setAttribute('font-size', '14');
+                text.textContent = i;
+                
+                nodeGroup.appendChild(circle);
+                nodeGroup.appendChild(text);
+            });
+            
+            svg.appendChild(nodeGroup);
+            svgGraphs.push(svg);
+            return svg;
+        }
+        
+        // Create and display all graphs
+        const container = document.getElementById('graphs');
+        graphs.forEach((graph, index) => {
+            const graphDiv = document.createElement('div');
+            graphDiv.className = 'graph';
+            
+            const title = document.createElement('div');
+            title.className = 'graph-title';
+            title.textContent = graph.name + ' (' + graph.type + ')';
+            graphDiv.appendChild(title);
+            
+            const svg = createGraphSVG(graph, index);
+            graphDiv.appendChild(svg);
+            
+            container.appendChild(graphDiv);
+        });
+        
+        function downloadSVG() {
+            // Create combined SVG
+            const combinedWidth = Math.min(graphs.length * 320, 1200);
+            const rows = Math.ceil((graphs.length * 320) / 1200);
+            const combinedHeight = rows * 350;
+            
+            let svgContent = '<svg xmlns="http://www.w3.org/2000/svg" width="' + combinedWidth + '" height="' + combinedHeight + '">';
+            
+            svgGraphs.forEach((svg, index) => {
+                const x = (index * 320) % 1200;
+                const y = Math.floor((index * 320) / 1200) * 350;
+                svgContent += '<g transform="translate(' + x + ',' + y + ')">';
+                svgContent += svg.innerHTML;
+                svgContent += '</g>';
+            });
+            
+            svgContent += '</svg>';
+            
+            const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'graphs.svg';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    `;
 }
 
 function clearAll() { 
