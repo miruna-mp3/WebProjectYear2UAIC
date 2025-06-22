@@ -46,19 +46,34 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
     const compileFunctions = {
         FixedVariable: mod => {
             const safeName = sanitizeName(mod.name);
+            const validateInteger = val => {
+                const str = String(val);
+                return /^-?\d+$/.test(str);
+            };
+            if (!validateInteger(mod.value)) {
+                throw new Error(`FixedVariable ${mod.name}: value must be an integer (only digits and optional leading -)`);
+            }
             const cast = mod.dataType === 'int' ? 'Math.floor' : mod.dataType === 'double' ? 'Number' : '';
             return `vars['${safeName}'] = ${cast}(${JSON.stringify(mod.value)});`;
         },
         
         RandomVariable: mod => {
             const safeName = sanitizeName(mod.name);
+            const validateInteger = val => {
+                const str = String(val);
+                return /^-?\d+$/.test(str);
+            };
+            if (!validateInteger(mod.min)) {
+                throw new Error(`RandomVariable ${mod.name}: min must be an integer (only digits and optional leading -)`);
+            }
+            if (!validateInteger(mod.max)) {
+                throw new Error(`RandomVariable ${mod.name}: max must be an integer (only digits and optional leading -)`);
+            }
             const min = Number(mod.min) || 0;
             const max = Number(mod.max) || 0;
             if (min > max) throw new Error(`RandomVariable ${mod.name}: min (${min}) > max (${max})`);
             
-            if (mod.dataType === 'char') {
-                return `vars['${safeName}'] = String.fromCharCode(Math.floor(rng() * (${max} - ${min} + 1)) + ${min});`;
-            } else if (mod.dataType === 'prime') {
+            if (mod.dataType === 'prime') {
                 return `
                     const isPrime_${safeName} = n => {
                         if (n < 2) return false;
@@ -130,9 +145,14 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
             
             return `
                 const n = vars['${length}'];
-                const k = vars['${order}'];
-                const factorial = n => { let f = 1; for (let i = 2; i <= n; i++) f *= i; return f; };
-                if (k < 0 || k >= factorial(n)) throw new Error('Permutation: invalid order');
+                const k = BigInt(vars['${order}']);
+                const factorial = n => { 
+                    let f = 1n; 
+                    for (let i = 2n; i <= BigInt(n); i++) f *= i; 
+                    return f; 
+                };
+                const maxOrder = factorial(n);
+                if (k < 0n || k >= maxOrder) throw new Error('Permutation: invalid order');
                 
                 const arr = Array.from({length: n}, (_, i) => i + 1);
                 let order = k;
@@ -140,7 +160,7 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
                 
                 for (let i = n; i > 0; i--) {
                     const fact = factorial(i - 1);
-                    const idx = Math.floor(order / fact);
+                    const idx = Number(order / fact);
                     perm.push(arr[idx]);
                     arr.splice(idx, 1);
                     order %= fact;
@@ -596,20 +616,19 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
                     for (let repeatIter = 0; repeatIter < times; repeatIter++) {
                         const iterResults = [];
                         ${moduleCode}
-                        ${visibleModules.filter(m => m.type === 'FixedVariable' || m.type === 'RandomVariable').map(m => 
-                            `iterResults.push(String(vars['${sanitizeName(m.name)}']));`
-                        ).join('\n')}
                         const formattedResults = [];
                         ${visibleModules.map((m, idx) => {
                             if (m.type !== 'FixedVariable' && m.type !== 'RandomVariable') {
                                 return `formattedResults.push(formatOutput(iterResults.shift(), ${JSON.stringify(m)}));`;
                             } else {
-                                return `formattedResults.push(iterResults.shift());`;
+                                return `formattedResults.push(String(vars['${sanitizeName(m.name)}']));`;
                             }
                         }).join('\n')}
-                        repeatResults.push(formattedResults.join('${separator}'));
+                        const itemSeparator = '${separator}';
+                        repeatResults.push(formattedResults.join(itemSeparator));
                     }
-                    outputs.push(repeatResults.join('${separator}'));
+                    const repeatSeparator = '${mod.separator === 'newline' ? '\\n' : mod.separator === 'space' ? ' ' : ''}';
+                    outputs.push(repeatResults.join(repeatSeparator));
                 }
             `;
         }
@@ -641,7 +660,7 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
         ${visibleModules.map(compileModule).join('\n')}
         
         const separator = '${modules[0]?.separator === 'newline' ? '\\n' : modules[0]?.separator === 'space' ? ' ' : ''}';
-        return outputs.join(separator);
+        return outputs.join(separator).replace(/\\\\n/g, '\\n');
     `;
     
     console.log('Generated JS source:', jsSource);

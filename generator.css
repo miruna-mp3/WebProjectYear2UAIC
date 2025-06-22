@@ -534,8 +534,7 @@ body {
     margin-top: 0.3rem;
     border: 1px dashed #a0aec0;
     border-radius: 0.375rem;
-    min-height: 5rem;
-    padding: 0.3rem;
+    min-height: 5rem; 
     background: #f7fafc;
     position: relative;
     pointer-events: auto;
@@ -768,4 +767,9 @@ option {
     font-family: Verdana, Geneva, Tahoma, sans-serif;
     font-weight: 700;
     font-size: 0.6875rem;
+}
+
+.btn {
+    font-family: Jersey;
+    font-size: 1.15rem;
 }
