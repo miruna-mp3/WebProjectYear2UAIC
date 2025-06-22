@@ -501,7 +501,7 @@ function closeParameterPanel() {
 }
 
 function generateParameterHTML(moduleData) {
-    const integerVars = getAllIntegerVariables();
+    const integerVars = getAvailableIntegerVariables(moduleData.id);
     
     switch (moduleData.type) {
         case 'FixedVariable':
@@ -1159,6 +1159,55 @@ function getAllIntegerVariables() {
     
     collectVariables(dataModel.test);
     return variables;
+}
+
+function getAvailableIntegerVariables(moduleId) {
+    const availableVars = [];
+    let found = false;
+    let depth = 0;
+    const MAX_DEPTH = 10; // Prevent infinite recursion
+    
+    // we collect vars until we find target
+    function traverse(modules, scopeVars = []) {
+        if (found || !modules || depth > MAX_DEPTH) return;
+        
+        depth++;
+        const currentScopeVars = [];
+        
+        for (let i = 0; i < modules.length; i++) {
+            if (found) break;
+            
+            const module = modules[i];
+            if (!module) continue;
+            
+            // target?
+            if (module.id == moduleId) {
+                // Add all vars from parent scopes
+                scopeVars.forEach(v => availableVars.push(v));
+                // Add vars from current scope up to this point
+                currentScopeVars.forEach(v => availableVars.push(v));
+                found = true;
+                break;
+            }
+            
+            // track?
+            if ((module.type === 'FixedVariable' || module.type === 'RandomVariable') && 
+                module.dataType === 'int') {
+                currentScopeVars.push(module.name);
+            }
+            
+            // traverse if needed
+            if (module.type === 'Repeat' && module.modules && Array.isArray(module.modules) && module.modules.length > 0) {
+                const combinedVars = scopeVars.concat(currentScopeVars);
+                traverse(module.modules, combinedVars);
+            }
+        }
+        
+        depth--;
+    }
+    
+    traverse(dataModel.test || []);
+    return availableVars;
 }
 
 function findModuleById(moduleId) {
