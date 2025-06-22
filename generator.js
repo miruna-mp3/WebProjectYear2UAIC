@@ -2016,58 +2016,82 @@ function generateVisualizationScript(graphs) {
             const positions = [];
             const n = graph.nodes;
             
-            // Initialize positions randomly
+            // Fallback to circular for small graphs
+            if (n <= 3) {
+                const centerX = width / 2;
+                const centerY = height / 2;
+                const radius = Math.min(width, height) / 3;
+                
+                for (let i = 0; i < n; i++) {
+                    const angle = (2 * Math.PI * i) / n;
+                    positions[i] = {
+                        x: centerX + radius * Math.cos(angle),
+                        y: centerY + radius * Math.sin(angle)
+                    };
+                }
+                return positions;
+            }
+            
+            // Initialize positions in a circle
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const initialRadius = Math.min(width, height) / 4;
+            
             for (let i = 0; i < n; i++) {
+                const angle = (2 * Math.PI * i) / n;
                 positions[i] = {
-                    x: padding + Math.random() * (width - 2 * padding),
-                    y: padding + Math.random() * (height - 2 * padding)
+                    x: centerX + initialRadius * Math.cos(angle),
+                    y: centerY + initialRadius * Math.sin(angle)
                 };
             }
             
-            // Force-directed algorithm
-            const iterations = 50;
-            const k = Math.sqrt((width * height) / n); // Optimal distance
+            const iterations = 100;
+            const k = Math.min(width, height) / (n + 1);
             
             for (let iter = 0; iter < iterations; iter++) {
                 const forces = Array(n).fill().map(() => ({ x: 0, y: 0 }));
                 
-                // pushy forces between all pairs
                 for (let i = 0; i < n; i++) {
                     for (let j = i + 1; j < n; j++) {
                         const dx = positions[i].x - positions[j].x;
                         const dy = positions[i].y - positions[j].y;
-                        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                        const force = k * k / dist;
+                        const dist = Math.max(Math.sqrt(dx * dx + dy * dy), 1);
+                        const force = Math.min(k * k / (dist * dist), k);
                         
-                        forces[i].x += (dx / dist) * force;
-                        forces[i].y += (dy / dist) * force;
-                        forces[j].x -= (dx / dist) * force;
-                        forces[j].y -= (dy / dist) * force;
+                        const fx = (dx / dist) * force * 0.01;
+                        const fy = (dy / dist) * force * 0.01;
+                        
+                        forces[i].x += fx;
+                        forces[i].y += fy;
+                        forces[j].x -= fx;
+                        forces[j].y -= fy;
                     }
                 }
-                
-                // attracting forces between connected nodes
                 graph.edges.forEach(([u, v]) => {
                     const dx = positions[u].x - positions[v].x;
                     const dy = positions[u].y - positions[v].y;
-                    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                    const force = dist * dist / k;
+                    const dist = Math.max(Math.sqrt(dx * dx + dy * dy), 1);
+                    const force = dist / k * 0.01;
                     
-                    forces[u].x -= (dx / dist) * force;
-                    forces[u].y -= (dy / dist) * force;
-                    forces[v].x += (dx / dist) * force;
-                    forces[v].y += (dy / dist) * force;
+                    const fx = (dx / dist) * force;
+                    const fy = (dy / dist) * force;
+                    
+                    forces[u].x -= fx;
+                    forces[u].y -= fy;
+                    forces[v].x += fx;
+                    forces[v].y += fy;
                 });
                 
-                // apply forces algorithm (? damping like some sort of baseline for distancing)
-                const damping = 0.9;
+                const temperature = 1 - (iter / iterations);
+                
                 for (let i = 0; i < n; i++) {
-                    positions[i].x += forces[i].x * damping;
-                    positions[i].y += forces[i].y * damping;
+                    positions[i].x += forces[i].x * temperature;
+                    positions[i].y += forces[i].y * temperature;
                     
-                    // Keep within bounds
-                    positions[i].x = Math.max(padding, Math.min(width - padding, positions[i].x));
-                    positions[i].y = Math.max(padding, Math.min(height - padding, positions[i].y));
+                    // Keep within bounds with margin
+                    const margin = 40;
+                    positions[i].x = Math.max(padding + margin, Math.min(width - padding - margin, positions[i].x));
+                    positions[i].y = Math.max(padding + margin, Math.min(height - padding - margin, positions[i].y));
                 }
             }
             
