@@ -429,6 +429,8 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
         
         RandomTree: mod => {
             const nodes = sanitizeName(mod.nodesVar);
+            const minVal = mod.weighted === 'w' ? sanitizeName(mod.minValueVar) : null;
+            const maxVal = mod.weighted === 'w' ? sanitizeName(mod.maxValueVar) : null;
             
             let code = `
                 const n = vars['${nodes}'];
@@ -464,7 +466,10 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
             
             if (mod.weighted === 'w') {
                 code += `
-                    edges.forEach(e => e[2] = Math.floor(rng() * 100) + 1);
+                    const minW = vars['${minVal}'];
+                    const maxW = vars['${maxVal}'];
+                    if (minW > maxW) throw new Error('RandomTree: minValue > maxValue');
+                    edges.forEach(e => e[2] = Math.floor(rng() * (maxW - minW + 1)) + minW);
                 `;
             }
             
@@ -499,6 +504,8 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
         
         DirectedAcyclicGraph: mod => {
             const nodes = sanitizeName(mod.nodesVar);
+            const minVal = mod.weighted === 'w' ? sanitizeName(mod.minValueVar) : null;
+            const maxVal = mod.weighted === 'w' ? sanitizeName(mod.maxValueVar) : null;
             
             let code = `
                 const n = vars['${nodes}'];
@@ -515,7 +522,10 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
             
             if (mod.weighted === 'w') {
                 code += `
-                    edges.forEach(e => e[2] = Math.floor(rng() * 100) + 1);
+                    const minW = vars['${minVal}'];
+                    const maxW = vars['${maxVal}'];
+                    if (minW > maxW) throw new Error('DirectedAcyclicGraph: minValue > maxValue');
+                    edges.forEach(e => e[2] = Math.floor(rng() * (maxW - minW + 1)) + minW);
                 `;
             }
             

@@ -105,7 +105,9 @@ const moduleTemplates = {
         type: 'RandomTree',
         nodesVar: '',
         format: 'list',
-        weighted: 'w',
+        weighted: 'no-w',
+        minValueVar: '',
+        maxValueVar: '',
         visible: true,
         separator: 'newline'
     },
@@ -113,7 +115,9 @@ const moduleTemplates = {
         type: 'DirectedAcyclicGraph',
         nodesVar: '',
         format: 'list',
-        weighted: 'w',
+        weighted: 'no-w',
+        minValueVar: '',
+        maxValueVar: '',
         visible: true,
         separator: 'newline'
     },
@@ -472,7 +476,6 @@ function toggleParameterPanel(moduleId) {
         return;
     }
 
-    // Position panel below the name button specifically
     const nameBtn = moduleElement.querySelector('.name-btn');
     const rect = nameBtn.getBoundingClientRect();
     const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
@@ -801,6 +804,35 @@ function generateParameterHTML(moduleData) {
                 `<option value="${v}" ${v === moduleData.nodesVar ? 'selected' : ''}>${v}</option>`
             ).join('');
             
+            let treeWeightedOptions = '';
+            if (moduleData.weighted === 'w') {
+                const treeMinOptions = integerVars.map(v => 
+                    `<option value="${v}" ${v === moduleData.minValueVar ? 'selected' : ''}>${v}</option>`
+                ).join('');
+                const treeMaxOptions = integerVars.map(v => 
+                    `<option value="${v}" ${v === moduleData.maxValueVar ? 'selected' : ''}>${v}</option>`
+                ).join('');
+                
+                treeWeightedOptions = `
+                    <div class="param-row">
+                        <div class="param-group">
+                            <label class="param-label">min value:</label>
+                            <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'minValueVar', this.value)">
+                                <option value="">select variable...</option>
+                                ${treeMinOptions}
+                            </select>
+                        </div>
+                        <div class="param-group">
+                            <label class="param-label">max value:</label>
+                            <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'maxValueVar', this.value)">
+                                <option value="">select variable...</option>
+                                ${treeMaxOptions}
+                            </select>
+                        </div>
+                    </div>
+                `;
+            }
+            
             return `
                 <div class="param-group">
                     <label class="param-label">nodes:</label>
@@ -809,12 +841,42 @@ function generateParameterHTML(moduleData) {
                         ${treeNodesOptions}
                     </select>
                 </div>
+                ${treeWeightedOptions}
             `;
         
         case 'DirectedAcyclicGraph':
             const dagNodesOptions = integerVars.map(v => 
                 `<option value="${v}" ${v === moduleData.nodesVar ? 'selected' : ''}>${v}</option>`
             ).join('');
+            
+            let dagWeightedOptions = '';
+            if (moduleData.weighted === 'w') {
+                const dagMinOptions = integerVars.map(v => 
+                    `<option value="${v}" ${v === moduleData.minValueVar ? 'selected' : ''}>${v}</option>`
+                ).join('');
+                const dagMaxOptions = integerVars.map(v => 
+                    `<option value="${v}" ${v === moduleData.maxValueVar ? 'selected' : ''}>${v}</option>`
+                ).join('');
+                
+                dagWeightedOptions = `
+                    <div class="param-row">
+                        <div class="param-group">
+                            <label class="param-label">min value:</label>
+                            <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'minValueVar', this.value)">
+                                <option value="">select variable...</option>
+                                ${dagMinOptions}
+                            </select>
+                        </div>
+                        <div class="param-group">
+                            <label class="param-label">max value:</label>
+                            <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'maxValueVar', this.value)">
+                                <option value="">select variable...</option>
+                                ${dagMaxOptions}
+                            </select>
+                        </div>
+                    </div>
+                `;
+            }
             
             return `
                 <div class="param-group">
@@ -824,6 +886,7 @@ function generateParameterHTML(moduleData) {
                         ${dagNodesOptions}
                     </select>
                 </div>
+                ${dagWeightedOptions}
             `;
         
         default:
@@ -1413,11 +1476,15 @@ function extractModuleData(element) {
                 cleanData.nodesVar = moduleData.nodesVar;
                 cleanData.format = moduleData.format;
                 cleanData.weighted = moduleData.weighted;
+                cleanData.minValueVar = moduleData.minValueVar;
+                cleanData.maxValueVar = moduleData.maxValueVar;
                 break;
             case 'DirectedAcyclicGraph':
                 cleanData.nodesVar = moduleData.nodesVar;
                 cleanData.format = moduleData.format;
                 cleanData.weighted = moduleData.weighted;
+                cleanData.minValueVar = moduleData.minValueVar;
+                cleanData.maxValueVar = moduleData.maxValueVar;
                 break;
             case 'Repeat':
                 cleanData.timesVar = moduleData.timesVar;
@@ -1487,9 +1554,15 @@ function executeTestGeneration() {
 }
 
 function downloadTest() {
-    updateDataModel();
-    const dataStr = JSON.stringify(dataModel, null, 2);
-    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+    const output = document.getElementById('json-output');
+    const content = output.textContent || '';
+    
+    if (!content) {
+        alert('No test output to download. Please generate a test first.');
+        return;
+    }
+    
+    const dataBlob = new Blob([content], {type: 'text/plain'});
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
