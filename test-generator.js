@@ -835,39 +835,8 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
                     // For variables inside repeats, only generate the assignment, not the output
                     return compileFunctions[m.type](m);
                 } else if (m.type === 'Repeat') {
-                    // treat nested repeats as modules 
-                    const resultVar = `result_${sanitizeName(m.name)}_${idx}`;
-                    
-                    // generate the nested repeat logic directly
-                    const times = sanitizeName(m.timesVar);
-                    const nestedVisibleModules = m.modules ? m.modules.filter(nm => nm.visible) : [];
-                    
-                    if (!nestedVisibleModules.length) {
-                        return `let ${resultVar} = ''; iterResults.push(${resultVar});`;
-                    }
-                    
-                    // handle simple case of variables in nested repeat
-                    const nestedCode = nestedVisibleModules.map(nm => {
-                        if (nm.type === 'FixedVariable' || nm.type === 'RandomVariable') {
-                            return compileFunctions[nm.type](nm) + `\nnestedIterResults.push(String(vars['${sanitizeName(nm.name)}']));`;
-                        } else {
-                            return `nestedIterResults.push('${nm.name}');`; // placeholder
-                        }
-                    }).join('\n');
-                    
-                    return `
-                        {
-                            const nestedTimes = vars['${times}'];
-                            const nestedResults = [];
-                            for (let nestedIter = 0; nestedIter < nestedTimes; nestedIter++) {
-                                const nestedIterResults = [];
-                                ${nestedCode}
-                                nestedResults.push(nestedIterResults.join('\\n'));
-                            }
-                            const ${resultVar} = nestedResults.join('\\n');
-                            iterResults.push(${resultVar});
-                        }
-                    `;
+                    // Recursively compile the nested repeat - this handles any depth automatically
+                    return compileModule(m, idx, visibleModules.length).replace(/outputs\.push\(/g, 'iterResults.push(');
                 } else {
                     const resultVar = `result_${sanitizeName(m.name)}_${idx}`;
                     const functionCode = compileFunctions[m.type](m);
