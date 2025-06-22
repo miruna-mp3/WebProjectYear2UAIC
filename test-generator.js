@@ -811,6 +811,7 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
         },
         
         Repeat: mod => {
+            // nested repeats should be handled by the main compileModule function 
             return '';
         }
     };
@@ -833,11 +834,56 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
                 if (m.type === 'FixedVariable' || m.type === 'RandomVariable') {
                     // For variables inside repeats, only generate the assignment, not the output
                     return compileFunctions[m.type](m);
-                } else {
+                } else if (m.type === 'Repeat') {
+                    // treat nested repeats as modules 
+                    const resultVar = `result_${sanitizeName(m.name)}_${idx}`;
+                    
+                    // generate the nested repeat logic directly
+                    const times = sanitizeName(m.timesVar);
+                    const nestedVisibleModules = m.modules ? m.modules.filter(nm => nm.visible) : [];
+                    
+                    if (!nestedVisibleModules.length) {
+                        return `let ${resultVar} = ''; iterResults.push(${resultVar});`;
+                    }
+                    
+                    // handle simple case of variables in nested repeat
+                    const nestedCode = nestedVisibleModules.map(nm => {
+                        if (nm.type === 'FixedVariable' || nm.type === 'RandomVariable') {
+                            return compileFunctions[nm.type](nm) + `\nnestedIterResults.push(String(vars['${sanitizeName(nm.name)}']));`;
+                        } else {
+                            return `nestedIterResults.push('${nm.name}');`; // placeholder
+                        }
+                    }).join('\n');
+                    
                     return `
-                        iterResults.push((()=> {
-                            ${compileFunctions[m.type](m)}
-                        })());
+                        {
+                            const nestedTimes = vars['${times}'];
+                            const nestedResults = [];
+                            for (let nestedIter = 0; nestedIter < nestedTimes; nestedIter++) {
+                                const nestedIterResults = [];
+                                ${nestedCode}
+                                nestedResults.push(nestedIterResults.join('\\n'));
+                            }
+                            const ${resultVar} = nestedResults.join('\\n');
+                            iterResults.push(${resultVar});
+                        }
+                    `;
+                } else {
+                    const resultVar = `result_${sanitizeName(m.name)}_${idx}`;
+                    const functionCode = compileFunctions[m.type](m);
+                     
+                    let modifiedCode;
+                    if (functionCode.includes('return ')) {
+                        // replace the last return statement
+                        modifiedCode = functionCode.replace(/return\s+([^;]+);?\s*$/, `let ${resultVar} = $1;`);
+                    } else {
+                        // probably variable if no return
+                        modifiedCode = functionCode + `\nlet ${resultVar} = undefined;`;
+                    }
+                    
+                    return `
+                        ${modifiedCode}
+                        iterResults.push(${resultVar});
                     `;
                 }
             }).filter(code => code).join('\n');
