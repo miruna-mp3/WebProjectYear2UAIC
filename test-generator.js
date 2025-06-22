@@ -502,10 +502,10 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
             
             if (mod.format === 'adj-mat') {
                 code += `
-                    const matrix = Array(n).fill().map(() => Array(n).fill(${mod.weighted === 'w' ? '0' : 'false'}));
+                    const matrix = Array(n).fill().map(() => Array(n).fill(${mod.weighted === 'w' ? '0' : '0'}));
                     edges.forEach(([u, v${mod.weighted === 'w' ? ', w' : ''}]) => {
-                        matrix[u][v] = ${mod.weighted === 'w' ? 'w' : 'true'};
-                        ${mod.direction === 'undir' ? `matrix[v][u] = ${mod.weighted === 'w' ? 'w' : 'true'};` : ''}
+                        matrix[u][v] = ${mod.weighted === 'w' ? 'w' : '1'};
+                        ${mod.direction === 'undir' ? `matrix[v][u] = ${mod.weighted === 'w' ? 'w' : '1'};` : ''}
                     });
                     return matrix;
                 `;
@@ -590,10 +590,10 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
             
             if (mod.format === 'adj-mat') {
                 code += `
-                    const matrix = Array(n).fill().map(() => Array(n).fill(${mod.weighted === 'w' ? '0' : 'false'}));
+                    const matrix = Array(n).fill().map(() => Array(n).fill(${mod.weighted === 'w' ? '0' : '0'}));
                     edges.forEach(([u, v${mod.weighted === 'w' ? ', w' : ''}]) => {
-                        matrix[u][v] = ${mod.weighted === 'w' ? 'w' : 'true'};
-                        ${mod.direction === 'undir' ? `matrix[v][u] = ${mod.weighted === 'w' ? 'w' : 'true'};` : ''}
+                        matrix[u][v] = ${mod.weighted === 'w' ? 'w' : '1'};
+                        ${mod.direction === 'undir' ? `matrix[v][u] = ${mod.weighted === 'w' ? 'w' : '1'};` : ''}
                     });
                     return matrix;
                 `;
@@ -684,55 +684,48 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
             const minVal = mod.weighted === 'w' ? sanitizeName(mod.minValueVar) : null;
             const maxVal = mod.weighted === 'w' ? sanitizeName(mod.maxValueVar) : null;
             
-            let code = `
-                const n = vars['${nodes}'];
-                const edges = [];
-                
-                for (let i = 0; i < n; i++) {
-                    for (let j = i + 1; j < n; j++) {
-                        if (rng() < 0.2) {
-                            edges.push([i, j${mod.weighted === 'w' ? ', 0' : ''}]);
-                        }
-                    }
-                }
-            `;
-            
-            if (mod.weighted === 'w') {
-                code += `
-                    const minW = vars['${minVal}'];
-                    const maxW = vars['${maxVal}'];
-                    if (minW > maxW) throw new Error('DirectedAcyclicGraph: minValue > maxValue');
-                    edges.forEach(e => e[2] = Math.floor(rng() * (maxW - minW + 1)) + minW);
-                `;
-            }
-            
-            if (mod.format === 'parent-arr') {
-                code += `
+            if (mod.format === 'parent-arr') { 
+                let code = `
+                    const n = vars['${nodes}'];
+                    if (n < 1) throw new Error('DirectedAcyclicGraph: need at least 1 node');
+                    if (n === 1) return [-1];
+                    
                     const parent = Array(n).fill(-1);
-                    const adj = Array(n).fill().map(() => []);
-                    edges.forEach(([u, v]) => adj[u].push(v));
+                    parent[0] = -1; // root has no parent
+                     
+                    for (let i = 1; i < n; i++) {
+                        parent[i] = Math.floor(rng() * i);
+                    }
                     
-                    const visited = Array(n).fill(false);
-                    const queue = [0];
-                    visited[0] = true;
+                    return parent;
+                `;
+                return code;
+            } else { 
+                let code = `
+                    const n = vars['${nodes}'];
+                    const edges = [];
                     
-                    while (queue.length) {
-                        const u = queue.shift();
-                        for (const v of adj[u]) {
-                            if (!visited[v]) {
-                                visited[v] = true;
-                                parent[v] = u;
-                                queue.push(v);
+                    for (let i = 0; i < n; i++) {
+                        for (let j = i + 1; j < n; j++) {
+                            if (rng() < 0.2) {
+                                edges.push([i, j${mod.weighted === 'w' ? ', 0' : ''}]);
                             }
                         }
                     }
-                    return parent;
                 `;
-            } else {
+                
+                if (mod.weighted === 'w') {
+                    code += `
+                        const minW = vars['${minVal}'];
+                        const maxW = vars['${maxVal}'];
+                        if (minW > maxW) throw new Error('DirectedAcyclicGraph: minValue > maxValue');
+                        edges.forEach(e => e[2] = Math.floor(rng() * (maxW - minW + 1)) + minW);
+                    `;
+                }
+                
                 code += 'return edges;';
+                return code;
             }
-            
-            return code;
         },
         
         Repeat: mod => {
