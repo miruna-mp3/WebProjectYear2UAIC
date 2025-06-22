@@ -763,3 +763,9 @@ body {
         min-width: auto;
     }
 }
+
+option {
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    font-weight: 700;
+    font-size: 0.6875rem;
+}

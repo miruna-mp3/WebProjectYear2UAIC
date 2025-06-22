@@ -81,9 +81,11 @@ const moduleTemplates = {
         nodesVar: '',
         edgesVar: '',
         format: 'list',
-        direction: 'dir',
-        weighted: 'w',
+        direction: 'undir',
+        weighted: 'no-w',
         connectivity: 'conn',
+        minValueVar: '',
+        maxValueVar: '',
         visible: true,
         separator: 'newline'
     },
@@ -91,9 +93,11 @@ const moduleTemplates = {
         type: 'BipartiteGraph',
         nodesVar: '',
         format: 'list',
-        direction: 'dir',
-        weighted: 'w',
+        direction: 'undir',
+        weighted: 'no-w',
         connectivity: 'conn',
+        minValueVar: '',
+        maxValueVar: '',
         visible: true,
         separator: 'newline'
     },
@@ -389,8 +393,7 @@ function generateModuleHTML(moduleData) {
                 <button class="name-btn" onclick="toggleParameterPanel('${moduleData.id}')">${moduleData.name}</button>
                 <button class="format-btn" onclick="cycleBipartiteFormat('${moduleData.id}')">${moduleData.format}</button>
                 <button class="direction-btn" onclick="cycleBipartiteDirection('${moduleData.id}')">${moduleData.direction}</button>
-                <button class="weight-btn" onclick="cycleBipartiteWeight('${moduleData.id}')">${moduleData.weighted}</button>
-                <button class="connectivity-btn" onclick="cycleBipartiteConnectivity('${moduleData.id}')">${moduleData.connectivity}</button>
+                <button class="weight-btn" onclick="cycleBipartiteWeight('${moduleData.id}')">${moduleData.weighted}</button> 
                 <button class="visibility-btn ${visibilityClass}" onclick="toggleVisibility('${moduleData.id}')"></button>
                 <button class="separator-btn" style="display: ${separatorDisplay}" onclick="cycleSeparator('${moduleData.id}')">${moduleData.separator}</button>
                 <button class="delete-btn" onclick="deleteModule('${moduleData.id}')">×</button>
@@ -699,6 +702,35 @@ function generateParameterHTML(moduleData) {
                 `<option value="${v}" ${v === moduleData.edgesVar ? 'selected' : ''}>${v}</option>`
             ).join('');
             
+            let weightedOptions = '';
+            if (moduleData.weighted === 'w') {
+                const graphMinOptions = integerVars.map(v => 
+                    `<option value="${v}" ${v === moduleData.minValueVar ? 'selected' : ''}>${v}</option>`
+                ).join('');
+                const graphMaxOptions = integerVars.map(v => 
+                    `<option value="${v}" ${v === moduleData.maxValueVar ? 'selected' : ''}>${v}</option>`
+                ).join('');
+                
+                weightedOptions = `
+                    <div class="param-row">
+                        <div class="param-group">
+                            <label class="param-label">min value:</label>
+                            <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'minValueVar', this.value)">
+                                <option value="">select variable...</option>
+                                ${graphMinOptions}
+                            </select>
+                        </div>
+                        <div class="param-group">
+                            <label class="param-label">max value:</label>
+                            <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'maxValueVar', this.value)">
+                                <option value="">select variable...</option>
+                                ${graphMaxOptions}
+                            </select>
+                        </div>
+                    </div>
+                `;
+            }
+            
             return `
                 <div class="param-row">
                     <div class="param-group">
@@ -716,12 +748,42 @@ function generateParameterHTML(moduleData) {
                         </select>
                     </div>
                 </div>
+                ${weightedOptions}
             `;
         
         case 'BipartiteGraph':
             const bipartiteNodesOptions = integerVars.map(v => 
                 `<option value="${v}" ${v === moduleData.nodesVar ? 'selected' : ''}>${v}</option>`
             ).join('');
+            
+            let bipartiteWeightedOptions = '';
+            if (moduleData.weighted === 'w') {
+                const bipartiteMinOptions = integerVars.map(v => 
+                    `<option value="${v}" ${v === moduleData.minValueVar ? 'selected' : ''}>${v}</option>`
+                ).join('');
+                const bipartiteMaxOptions = integerVars.map(v => 
+                    `<option value="${v}" ${v === moduleData.maxValueVar ? 'selected' : ''}>${v}</option>`
+                ).join('');
+                
+                bipartiteWeightedOptions = `
+                    <div class="param-row">
+                        <div class="param-group">
+                            <label class="param-label">min value:</label>
+                            <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'minValueVar', this.value)">
+                                <option value="">select variable...</option>
+                                ${bipartiteMinOptions}
+                            </select>
+                        </div>
+                        <div class="param-group">
+                            <label class="param-label">max value:</label>
+                            <select class="select-input" onchange="updateModuleParameter('${moduleData.id}', 'maxValueVar', this.value)">
+                                <option value="">select variable...</option>
+                                ${bipartiteMaxOptions}
+                            </select>
+                        </div>
+                    </div>
+                `;
+            }
             
             return `
                 <div class="param-group">
@@ -731,6 +793,7 @@ function generateParameterHTML(moduleData) {
                         ${bipartiteNodesOptions}
                     </select>
                 </div>
+                ${bipartiteWeightedOptions}
             `;
         
         case 'RandomTree':
@@ -1285,6 +1348,8 @@ function extractModuleData(element) {
                 cleanData.direction = moduleData.direction;
                 cleanData.weighted = moduleData.weighted;
                 cleanData.connectivity = moduleData.connectivity;
+                cleanData.minValueVar = moduleData.minValueVar;
+                cleanData.maxValueVar = moduleData.maxValueVar;
                 break;
             case 'BipartiteGraph':
                 cleanData.nodesVar = moduleData.nodesVar;
@@ -1292,6 +1357,8 @@ function extractModuleData(element) {
                 cleanData.direction = moduleData.direction;
                 cleanData.weighted = moduleData.weighted;
                 cleanData.connectivity = moduleData.connectivity;
+                cleanData.minValueVar = moduleData.minValueVar;
+                cleanData.maxValueVar = moduleData.maxValueVar;
                 break;
             case 'RandomTree':
                 cleanData.nodesVar = moduleData.nodesVar;
