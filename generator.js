@@ -1776,7 +1776,7 @@ function visualizeGraphs(graphs) {
     }
     
     // Open new window for visualization
-    const vizWindow = window.open('', 'Graph Visualization', 'width=1200,height=800');
+    const vizWindow = window.open('', 'Graph Visualization', 'width=800,height=1000');
     
     // Create HTML content
     const html = `
@@ -1802,15 +1802,18 @@ function visualizeGraphs(graphs) {
                 }
                 .graph-container {
                     display: flex;
-                    flex-wrap: wrap;
-                    gap: 20px;
+                    flex-direction: column;
+                    gap: 30px;
                     margin-bottom: 20px;
                 }
                 .graph {
                     border: 1px solid #ddd;
                     border-radius: 8px;
-                    padding: 10px;
+                    padding: 20px;
                     background: #fafafa;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
                 }
                 .graph-title {
                     font-weight: bold;
@@ -1854,12 +1857,227 @@ function generateVisualizationScript(graphs) {
         const graphs = ${JSON.stringify(graphs)};
         const svgGraphs = [];
         
+        function calculateNodePositions(graph, width, height, padding) {
+            const positions = [];
+            
+            if (graph.type === 'BipartiteGraph') {
+                return calculateBipartiteLayout(graph, width, height, padding);
+            } else if (graph.type === 'RandomTree') {
+                return calculateTreeLayout(graph, width, height, padding);
+            } else if (graph.type === 'DirectedAcyclicGraph') {
+                return calculateDAGLayout(graph, width, height, padding);
+            } else {
+                return calculateForceDirectedLayout(graph, width, height, padding);
+            }
+        }
+        
+        function calculateBipartiteLayout(graph, width, height, padding) {
+            const positions = [];
+            const n = graph.nodes;
+            
+            // Split nodes into two partitions
+            const leftNodes = [];
+            const rightNodes = [];
+            
+            for (let i = 0; i < n; i++) {
+                if (i % 2 === 0) leftNodes.push(i);
+                else rightNodes.push(i);
+            }
+            
+            const leftX = padding + 50;
+            const rightX = width - padding - 50;
+            const usableHeight = height - 2 * padding;
+             
+            leftNodes.forEach((node, idx) => {
+                positions[node] = {
+                    x: leftX,
+                    y: padding + (usableHeight * (idx + 1)) / (leftNodes.length + 1)
+                };
+            });
+             
+            rightNodes.forEach((node, idx) => {
+                positions[node] = {
+                    x: rightX,
+                    y: padding + (usableHeight * (idx + 1)) / (rightNodes.length + 1)
+                };
+            });
+            
+            return positions;
+        }
+        
+        function calculateTreeLayout(graph, width, height, padding) {
+            const positions = [];
+            const n = graph.nodes;
+            
+            // Build adjacency list
+            const adj = Array(n).fill().map(() => []);
+            graph.edges.forEach(([u, v]) => {
+                adj[u].push(v);
+                adj[v].push(u);
+            });
+            
+            // BFS to assign levels
+            const levels = Array(n).fill(-1);
+            const queue = [0];
+            levels[0] = 0;
+            let maxLevel = 0;
+            
+            while (queue.length > 0) {
+                const node = queue.shift();
+                for (const neighbor of adj[node]) {
+                    if (levels[neighbor] === -1) {
+                        levels[neighbor] = levels[node] + 1;
+                        maxLevel = Math.max(maxLevel, levels[neighbor]);
+                        queue.push(neighbor);
+                    }
+                }
+            }
+            
+            // Group nodes by level
+            const nodesByLevel = Array(maxLevel + 1).fill().map(() => []);
+            for (let i = 0; i < n; i++) {
+                nodesByLevel[levels[i]].push(i);
+            }
+            
+            // Position nodes
+            const usableWidth = width - 2 * padding;
+            const usableHeight = height - 2 * padding;
+            
+            nodesByLevel.forEach((levelNodes, level) => {
+                const y = padding + (usableHeight * level) / maxLevel;
+                levelNodes.forEach((node, idx) => {
+                    const x = padding + (usableWidth * (idx + 1)) / (levelNodes.length + 1);
+                    positions[node] = { x, y };
+                });
+            });
+            
+            return positions;
+        }
+        
+        function calculateDAGLayout(graph, width, height, padding) {
+            const positions = [];
+            const n = graph.nodes;
+            
+            // Build adjacency list for directed edges
+            const adj = Array(n).fill().map(() => []);
+            const inDegree = Array(n).fill(0);
+            
+            graph.edges.forEach(([u, v]) => {
+                adj[u].push(v);
+                inDegree[v]++;
+            });
+            
+            // Topological sort to assign levels
+            const levels = Array(n).fill(0);
+            const queue = [];
+            
+            // Find root nodes
+            for (let i = 0; i < n; i++) {
+                if (inDegree[i] === 0) {
+                    queue.push(i);
+                }
+            }
+            
+            let maxLevel = 0;
+            while (queue.length > 0) {
+                const node = queue.shift();
+                for (const neighbor of adj[node]) {
+                    levels[neighbor] = Math.max(levels[neighbor], levels[node] + 1);
+                    maxLevel = Math.max(maxLevel, levels[neighbor]);
+                    inDegree[neighbor]--;
+                    if (inDegree[neighbor] === 0) {
+                        queue.push(neighbor);
+                    }
+                }
+            }
+            
+            // Group nodes by level
+            const nodesByLevel = Array(maxLevel + 1).fill().map(() => []);
+            for (let i = 0; i < n; i++) {
+                nodesByLevel[levels[i]].push(i);
+            }
+            
+            // Position nodes
+            const usableWidth = width - 2 * padding;
+            const usableHeight = height - 2 * padding;
+            
+            nodesByLevel.forEach((levelNodes, level) => {
+                const y = padding + (usableHeight * level) / (maxLevel || 1);
+                levelNodes.forEach((node, idx) => {
+                    const x = padding + (usableWidth * (idx + 1)) / (levelNodes.length + 1);
+                    positions[node] = { x, y };
+                });
+            });
+            
+            return positions;
+        }
+        
+        function calculateForceDirectedLayout(graph, width, height, padding) {
+            const positions = [];
+            const n = graph.nodes;
+            
+            // Initialize positions randomly
+            for (let i = 0; i < n; i++) {
+                positions[i] = {
+                    x: padding + Math.random() * (width - 2 * padding),
+                    y: padding + Math.random() * (height - 2 * padding)
+                };
+            }
+            
+            // Force-directed algorithm
+            const iterations = 50;
+            const k = Math.sqrt((width * height) / n); // Optimal distance
+            
+            for (let iter = 0; iter < iterations; iter++) {
+                const forces = Array(n).fill().map(() => ({ x: 0, y: 0 }));
+                
+                // pushy forces between all pairs
+                for (let i = 0; i < n; i++) {
+                    for (let j = i + 1; j < n; j++) {
+                        const dx = positions[i].x - positions[j].x;
+                        const dy = positions[i].y - positions[j].y;
+                        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                        const force = k * k / dist;
+                        
+                        forces[i].x += (dx / dist) * force;
+                        forces[i].y += (dy / dist) * force;
+                        forces[j].x -= (dx / dist) * force;
+                        forces[j].y -= (dy / dist) * force;
+                    }
+                }
+                
+                // attracting forces between connected nodes
+                graph.edges.forEach(([u, v]) => {
+                    const dx = positions[u].x - positions[v].x;
+                    const dy = positions[u].y - positions[v].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                    const force = dist * dist / k;
+                    
+                    forces[u].x -= (dx / dist) * force;
+                    forces[u].y -= (dy / dist) * force;
+                    forces[v].x += (dx / dist) * force;
+                    forces[v].y += (dy / dist) * force;
+                });
+                
+                // apply forces algorithm (? damping like some sort of baseline for distancing)
+                const damping = 0.9;
+                for (let i = 0; i < n; i++) {
+                    positions[i].x += forces[i].x * damping;
+                    positions[i].y += forces[i].y * damping;
+                    
+                    // Keep within bounds
+                    positions[i].x = Math.max(padding, Math.min(width - padding, positions[i].x));
+                    positions[i].y = Math.max(padding, Math.min(height - padding, positions[i].y));
+                }
+            }
+            
+            return positions;
+        }
+        
         function createGraphSVG(graph, index) {
-            const width = 300;
-            const height = 300;
-            const centerX = width / 2;
-            const centerY = height / 2;
-            const radius = 100;
+            const width = 500;
+            const height = 400;
+            const padding = 40;
             
             // Create SVG
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -1867,15 +2085,8 @@ function generateVisualizationScript(graphs) {
             svg.setAttribute('height', height);
             svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
             
-            // Calculate node positions (circular layout)
-            const nodePositions = [];
-            for (let i = 0; i < graph.nodes; i++) {
-                const angle = (2 * Math.PI * i) / graph.nodes;
-                nodePositions.push({
-                    x: centerX + radius * Math.cos(angle),
-                    y: centerY + radius * Math.sin(angle)
-                });
-            }
+            // Calculate node positions based on graph type
+            const nodePositions = calculateNodePositions(graph, width, height, padding);
             
             // Draw edges
             const edgeGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -1992,16 +2203,15 @@ function generateVisualizationScript(graphs) {
         });
         
         function downloadSVG() {
-            // Create combined SVG
-            const combinedWidth = Math.min(graphs.length * 320, 1200);
-            const rows = Math.ceil((graphs.length * 320) / 1200);
-            const combinedHeight = rows * 350;
+            // Create combined SVG (vertical layout)
+            const combinedWidth = 540;
+            const combinedHeight = graphs.length * 450; 
             
             let svgContent = '<svg xmlns="http://www.w3.org/2000/svg" width="' + combinedWidth + '" height="' + combinedHeight + '">';
             
             svgGraphs.forEach((svg, index) => {
-                const x = (index * 320) % 1200;
-                const y = Math.floor((index * 320) / 1200) * 350;
+                const x = 20;
+                const y = index * 450 + 20;
                 svgContent += '<g transform="translate(' + x + ',' + y + ')">';
                 svgContent += svg.innerHTML;
                 svgContent += '</g>';
