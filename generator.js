@@ -1682,6 +1682,85 @@ function handleTouchStart(e) {
         lastTouchTime = currentTime;
     }
 }
+function generateCode() {
+    return null;
+}
+
+function uploadTest() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,.txt';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const content = e.target.result;
+                    const data = JSON.parse(content);
+                    
+                    // Load the uploaded data into the data model
+                    if (data.test && Array.isArray(data.test)) {
+                        dataModel.test = data.test;
+                        
+                        // Clear current workspace
+                        const rootScope = document.getElementById('root-scope');
+                        const moduleCards = rootScope.querySelectorAll('.module-card');
+                        moduleCards.forEach(card => card.remove());
+                        
+                        // Rebuild workspace from loaded data
+                        rebuildWorkspaceFromData();
+                        
+                        alert('Test data uploaded successfully!');
+                    } else {
+                        throw new Error('Invalid file format');
+                    }
+                } catch (error) {
+                    alert(`Upload failed: ${error.message}`);
+                }
+            };
+            reader.readAsText(file);
+        }
+    };
+    input.click();
+}
+
+function rebuildWorkspaceFromData() {
+    const rootScope = document.getElementById('root-scope');
+    
+    function buildModulesInScope(modules, scope) {
+        modules.forEach(moduleData => {
+            const moduleElement = createModuleElement(moduleData);
+            scope.appendChild(moduleElement);
+            
+            if (moduleData.type === 'Repeat' && moduleData.modules) {
+                const repeatScope = moduleElement.querySelector('.repeat-scope');
+                if (repeatScope) {
+                    buildModulesInScope(moduleData.modules, repeatScope);
+                }
+            }
+        });
+    }
+    
+    buildModulesInScope(dataModel.test, rootScope);
+    
+    // Update module counters
+    const typeCount = {};
+    function countModules(modules) {
+        modules.forEach(mod => {
+            typeCount[mod.type] = (typeCount[mod.type] || 0) + 1;
+            if (mod.type === 'Repeat' && mod.modules) {
+                countModules(mod.modules);
+            }
+        });
+    }
+    countModules(dataModel.test);
+    
+    // Update global counters
+    Object.keys(moduleCounters).forEach(type => {
+        moduleCounters[type] = typeCount[type] || 0;
+    });
+}
 
 function clearAll() { 
     dataModel.test = [];
