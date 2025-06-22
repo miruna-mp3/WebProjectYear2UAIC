@@ -1775,8 +1775,8 @@ function visualizeGraphs(graphs) {
         return;
     }
     
-    // Open new window for visualization
-    const vizWindow = window.open('', 'Graph Visualization', 'width=800,height=1000');
+    // Open new window for visualization - make it larger
+    const vizWindow = window.open('', 'Graph Visualization', 'width=1200,height=1400');
     
     // Create HTML content
     const html = `
@@ -2099,9 +2099,9 @@ function generateVisualizationScript(graphs) {
         }
         
         function createGraphSVG(graph, index) {
-            const width = 500;
-            const height = 400;
-            const padding = 40;
+            const width = 800;
+            const height = 600;
+            const padding = 60;
             
             // Create SVG
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -2228,14 +2228,14 @@ function generateVisualizationScript(graphs) {
         
         function downloadSVG() {
             // Create combined SVG (vertical layout)
-            const combinedWidth = 540;
-            const combinedHeight = graphs.length * 450; 
+            const combinedWidth = 840;
+            const combinedHeight = graphs.length * 650; 
             
             let svgContent = '<svg xmlns="http://www.w3.org/2000/svg" width="' + combinedWidth + '" height="' + combinedHeight + '">';
             
             svgGraphs.forEach((svg, index) => {
                 const x = 20;
-                const y = index * 450 + 20;
+                const y = index * 650 + 20;
                 svgContent += '<g transform="translate(' + x + ',' + y + ')">';
                 svgContent += svg.innerHTML;
                 svgContent += '</g>';
