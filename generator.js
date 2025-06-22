@@ -1402,7 +1402,39 @@ function storeJSON() {
 }
 
 function generateTest() {
-    updateDataModel(); 
+    updateDataModel();
+    
+    if (!window.generateTestFromModel) {
+        const script = document.createElement('script');
+        script.src = 'test-generator.js?t=' + Date.now(); // Add timestamp to prevent caching
+        script.onload = () => {
+            console.log('test-generator.js loaded successfully');
+            executeTestGeneration();
+        };
+        script.onerror = () => {
+            alert('Failed to load test-generator.js');
+        };
+        document.head.appendChild(script);
+    } else {
+        executeTestGeneration();
+    }
+}
+
+function executeTestGeneration() {
+    try {
+        if (!window.generateTestFromModel) {
+            throw new Error('Test generator not loaded');
+        }
+        const seed = Date.now();
+        const result = window.generateTestFromModel(dataModel, seed);
+        const output = document.getElementById('json-output');
+        output.textContent = result;
+        output.style.display = 'block';
+    } catch (error) {
+        alert(`Test generation failed:\n${error.message}`);
+        console.error('Test generation error:', error);
+        console.log('window.generateTestFromModel:', window.generateTestFromModel);
+    }
 }
 
 function downloadTest() {
