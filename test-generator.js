@@ -755,11 +755,9 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
             if (!visibleModules.length) return '';
             
             const moduleCode = visibleModules.map((m, idx) => {
-                const modCode = compileModule(m, idx, visibleModules.length);
-                if (!modCode) return '';
-                
                 if (m.type === 'FixedVariable' || m.type === 'RandomVariable') {
-                    return modCode;
+                    // For variables inside repeats, only generate the assignment, not the output
+                    return compileFunctions[m.type](m);
                 } else {
                     return `
                         iterResults.push((()=> {
