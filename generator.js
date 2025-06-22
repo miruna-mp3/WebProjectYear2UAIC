@@ -1715,13 +1715,10 @@ function uploadTest() {
                     const data = JSON.parse(content);
                     
                     // Load the uploaded data into the data model
-                    if (data.test && Array.isArray(data.test)) {
+                    if (data.test && Array.isArray(data.test)) { 
+                        clearAll();
+                         
                         dataModel.test = data.test;
-                        
-                        // Clear current workspace
-                        const rootScope = document.getElementById('root-scope');
-                        const moduleCards = rootScope.querySelectorAll('.module-card');
-                        moduleCards.forEach(card => card.remove());
                         
                         // Rebuild workspace from loaded data
                         rebuildWorkspaceFromData();
@@ -1743,6 +1740,45 @@ function uploadTest() {
 function rebuildWorkspaceFromData() {
     const rootScope = document.getElementById('root-scope');
     
+    // ensure IDs are assigned and unique
+    let maxId = 0;
+    function assignIdsAndCount(modules) {
+        const typeCount = {};
+        modules.forEach(mod => {
+            // module HAS To have an ID
+            if (!mod.id) {
+                mod.id = ++moduleIdCounter;
+            } else {
+                maxId = Math.max(maxId, mod.id);
+            }
+            
+            // Count module types for display names
+            typeCount[mod.type] = (typeCount[mod.type] || 0) + 1;
+            
+            // ensure proper display name
+            if (!mod.name || mod.name === '') {
+                const displayName = getDisplayName(mod.type, typeCount[mod.type]);
+                mod.name = displayName;
+            }
+            
+            // recursive handler
+            if (mod.type === 'Repeat' && mod.modules) {
+                assignIdsAndCount(mod.modules);
+            }
+        });
+        return typeCount;
+    }
+    
+    // assign IDs and get type counts
+    const typeCount = assignIdsAndCount(dataModel.test);
+    
+    // Update global counters and verify
+    moduleIdCounter = Math.max(moduleIdCounter, maxId);
+    Object.keys(moduleCounters).forEach(type => {
+        moduleCounters[type] = typeCount[type] || 0;
+    });
+    
+    // Build the HTML elements
     function buildModulesInScope(modules, scope) {
         modules.forEach(moduleData => {
             const moduleElement = createModuleElement(moduleData);
@@ -1758,23 +1794,6 @@ function rebuildWorkspaceFromData() {
     }
     
     buildModulesInScope(dataModel.test, rootScope);
-    
-    // Update module counters
-    const typeCount = {};
-    function countModules(modules) {
-        modules.forEach(mod => {
-            typeCount[mod.type] = (typeCount[mod.type] || 0) + 1;
-            if (mod.type === 'Repeat' && mod.modules) {
-                countModules(mod.modules);
-            }
-        });
-    }
-    countModules(dataModel.test);
-    
-    // Update global counters
-    Object.keys(moduleCounters).forEach(type => {
-        moduleCounters[type] = typeCount[type] || 0;
-    });
 }
 
 function visualizeGraphs(graphs) {
