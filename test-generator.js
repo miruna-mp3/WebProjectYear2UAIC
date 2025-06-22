@@ -771,14 +771,12 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
             } else { 
                 let code = `
                     const n = vars['${nodes}'];
+                    if (n < 1) throw new Error('DirectedAcyclicGraph: need at least 1 node');
                     const edges = [];
-                    
-                    for (let i = 0; i < n; i++) {
-                        for (let j = i + 1; j < n; j++) {
-                            if (rng() < 0.2) {
-                                edges.push([i, j${mod.weighted === 'w' ? ', 0' : ''}]);
-                            }
-                        }
+                     
+                    for (let i = 1; i < n; i++) {
+                        const parent = Math.floor(rng() * i);
+                        edges.push([parent, i${mod.weighted === 'w' ? ', 0' : ''}]);
                     }
                 `;
                 
