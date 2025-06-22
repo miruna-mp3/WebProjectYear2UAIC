@@ -137,8 +137,69 @@ document.addEventListener('drop', handleDrop);
 document.addEventListener('dragend', handleDragEnd);
 document.addEventListener('click', handleGlobalClick);
 
+// Double-click support for adding modules
+document.addEventListener('dblclick', handleDoubleClick);
+
+function handleDoubleClick(e) {
+    const paletteItem = e.target.closest('.palette-item');
+    if (paletteItem) {
+        // Skip if touch was already handled
+        if (touchHandled) {
+            console.log('Skipping double-click - already handled by touch');
+            return;
+        }
+        
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const moduleType = paletteItem.dataset.type;
+        console.log('Double-click adding:', moduleType);
+        
+        // Check nesting limit for repeat modules
+        if (moduleType === 'Repeat') {
+            const rootScope = document.getElementById('root-scope');
+            const nestingLevel = getNestingLevel(rootScope);
+            if (nestingLevel >= 3) {
+                alert('Maximum nesting level (3) reached for repeat modules');
+                return;
+            }
+        }
+        
+        // Create and add module
+        const moduleData = createNewModule(moduleType);
+        const moduleElement = createModuleElement(moduleData);
+        const rootScope = document.getElementById('root-scope');
+        
+        // Add to beginning of workspace
+        if (rootScope.firstChild) {
+            rootScope.insertBefore(moduleElement, rootScope.firstChild);
+        } else {
+            rootScope.appendChild(moduleElement);
+        }
+        
+        // Update data model
+        dataModel.test.unshift(moduleData);
+        
+        // Visual feedback
+        moduleElement.style.animation = 'slideIn 0.3s ease-out';
+        paletteItem.style.animation = 'flash 0.3s ease-out';
+        
+        // Reset animations
+        setTimeout(() => {
+            moduleElement.style.animation = '';
+            paletteItem.style.animation = '';
+        }, 300);
+        
+        // Scroll to show new module
+        rootScope.scrollTop = 0;
+        
+        console.log('Module added successfully:', moduleType);
+    }
+}
+
 // Mobile double-click support
 let lastTouchTime = 0;
+let touchHandled = false;
 document.addEventListener('touchstart', handleTouchStart);
 
 function handleDragStart(e) {
@@ -1581,6 +1642,11 @@ function handleTouchStart(e) {
         if (tapInterval < 300 && tapInterval > 0) {
             // Double tap detected
             e.preventDefault();
+            
+            // Mark that touch was handled to prevent double-click from also firing
+            touchHandled = true;
+            setTimeout(() => { touchHandled = false; }, 500);
+            
             const paletteItem = e.target.closest('.palette-item');
             const moduleType = paletteItem.dataset.type;
             
