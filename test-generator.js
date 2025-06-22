@@ -29,13 +29,15 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
         
         if (Array.isArray(value)) {
             if (value.length > 0 && Array.isArray(value[0])) {
+                // For 2D arrays (matrices), always use space within rows and newlines between rows
                 return value.map(row => {
-                    if (Array.isArray(row) && row.length > 2) {
+                    if (Array.isArray(row)) {
                         return row.join(' ');
                     }
-                    return row.join(' ');
+                    return String(row);
                 }).join('\\n');
             }
+            // For 1D arrays, always use space separation
             return value.join(' ');
         }
         return String(value);
@@ -46,55 +48,97 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
     const compileFunctions = {
         FixedVariable: mod => {
             const safeName = sanitizeName(mod.name);
-            const validateInteger = val => {
-                const str = String(val);
-                return /^-?\d+$/.test(str);
-            };
-            if (!validateInteger(mod.value)) {
-                throw new Error(`FixedVariable ${mod.name}: value must be an integer (only digits and optional leading -)`);
+            
+            if (mod.dataType === 'char') {
+                // For char type, accept single character or ASCII code
+                const val = String(mod.value);
+                if (val.length === 1) {
+                    return `vars['${safeName}'] = ${JSON.stringify(val)};`;
+                } else {
+                    const validateInteger = val => /^-?\d+$/.test(String(val));
+                    if (!validateInteger(mod.value)) {
+                        throw new Error(`FixedVariable ${mod.name}: char type requires single character or ASCII code (integer)`);
+                    }
+                    const code = Number(mod.value);
+                    if (code < 0 || code > 127) {
+                        throw new Error(`FixedVariable ${mod.name}: ASCII code must be 0-127`);
+                    }
+                    return `vars['${safeName}'] = String.fromCharCode(${code});`;
+                }
+            } else if (mod.dataType === 'double') {
+                // For double, accept any numeric value
+                const num = Number(mod.value);
+                if (isNaN(num)) {
+                    throw new Error(`FixedVariable ${mod.name}: value must be a number for double type`);
+                }
+                return `vars['${safeName}'] = ${num};`;
+            } else {
+                // For int type, validate integer
+                const validateInteger = val => /^-?\d+$/.test(String(val));
+                if (!validateInteger(mod.value)) {
+                    throw new Error(`FixedVariable ${mod.name}: value must be an integer (only digits and optional leading -)`);
+                }
+                return `vars['${safeName}'] = Math.floor(${JSON.stringify(mod.value)});`;
             }
-            const cast = mod.dataType === 'int' ? 'Math.floor' : mod.dataType === 'double' ? 'Number' : '';
-            return `vars['${safeName}'] = ${cast}(${JSON.stringify(mod.value)});`;
         },
         
         RandomVariable: mod => {
             const safeName = sanitizeName(mod.name);
-            const validateInteger = val => {
-                const str = String(val);
-                return /^-?\d+$/.test(str);
-            };
-            if (!validateInteger(mod.min)) {
-                throw new Error(`RandomVariable ${mod.name}: min must be an integer (only digits and optional leading -)`);
-            }
-            if (!validateInteger(mod.max)) {
-                throw new Error(`RandomVariable ${mod.name}: max must be an integer (only digits and optional leading -)`);
-            }
-            const min = Number(mod.min) || 0;
-            const max = Number(mod.max) || 0;
-            if (min > max) throw new Error(`RandomVariable ${mod.name}: min (${min}) > max (${max})`);
             
-            if (mod.dataType === 'prime') {
-                return `
-                    const isPrime_${safeName} = n => {
-                        if (n < 2) return false;
-                        for (let i = 2; i * i <= n; i++) if (n % i === 0) return false;
-                        return true;
-                    };
-                    const primes_${safeName} = [];
-                    for (let i = ${min}; i <= ${max}; i++) if (isPrime_${safeName}(i)) primes_${safeName}.push(i);
-                    if (!primes_${safeName}.length) throw new Error('No primes in range [${min}, ${max}]');
-                    vars['${safeName}'] = primes_${safeName}[Math.floor(rng() * primes_${safeName}.length)];
-                `;
-            } else if (mod.dataType === 'power of 2') {
-                return `
-                    const powers_${safeName} = [];
-                    for (let p = 1; p <= ${max}; p *= 2) if (p >= ${min}) powers_${safeName}.push(p);
-                    if (!powers_${safeName}.length) throw new Error('No powers of 2 in range [${min}, ${max}]');
-                    vars['${safeName}'] = powers_${safeName}[Math.floor(rng() * powers_${safeName}.length)];
-                `;
+            if (mod.dataType === 'char') {
+                // For char type, treat min/max as ASCII codes
+                const validateInteger = val => /^-?\d+$/.test(String(val));
+                if (!validateInteger(mod.min) || !validateInteger(mod.max)) {
+                    throw new Error(`RandomVariable ${mod.name}: min and max must be ASCII codes (integers 0-127) for char type`);
+                }
+                const min = Number(mod.min) || 32;  // Default to space character
+                const max = Number(mod.max) || 126; // Default to tilde
+                if (min < 0 || max > 127 || min > max) {
+                    throw new Error(`RandomVariable ${mod.name}: ASCII codes must be 0-127 and min <= max`);
+                }
+                return `vars['${safeName}'] = String.fromCharCode(Math.floor(rng() * (${max} - ${min} + 1)) + ${min});`;
+            } else if (mod.dataType === 'double') {
+                // For double type, generate floating point numbers
+                const min = Number(mod.min) || 0;
+                const max = Number(mod.max) || 0;
+                if (isNaN(min) || isNaN(max)) {
+                    throw new Error(`RandomVariable ${mod.name}: min and max must be numbers for double type`);
+                }
+                if (min > max) throw new Error(`RandomVariable ${mod.name}: min (${min}) > max (${max})`);
+                return `vars['${safeName}'] = rng() * (${max} - ${min}) + ${min};`;
             } else {
-                const cast = mod.dataType === 'int' ? 'Math.floor' : '';
-                return `vars['${safeName}'] = ${cast}(rng() * (${max} - ${min} + 1) + ${min});`;
+                // For int, prime, and power of 2 types, validate as integers
+                const validateInteger = val => /^-?\d+$/.test(String(val));
+                if (!validateInteger(mod.min) || !validateInteger(mod.max)) {
+                    throw new Error(`RandomVariable ${mod.name}: min and max must be integers for ${mod.dataType} type`);
+                }
+                const min = Number(mod.min) || 0;
+                const max = Number(mod.max) || 0;
+                if (min > max) throw new Error(`RandomVariable ${mod.name}: min (${min}) > max (${max})`);
+                
+                if (mod.dataType === 'prime') {
+                    return `
+                        const isPrime_${safeName} = n => {
+                            if (n < 2) return false;
+                            for (let i = 2; i * i <= n; i++) if (n % i === 0) return false;
+                            return true;
+                        };
+                        const primes_${safeName} = [];
+                        for (let i = ${min}; i <= ${max}; i++) if (isPrime_${safeName}(i)) primes_${safeName}.push(i);
+                        if (!primes_${safeName}.length) throw new Error('No primes in range [${min}, ${max}]');
+                        vars['${safeName}'] = primes_${safeName}[Math.floor(rng() * primes_${safeName}.length)];
+                    `;
+                } else if (mod.dataType === 'power of 2') {
+                    return `
+                        const powers_${safeName} = [];
+                        for (let p = 1; p <= ${max}; p *= 2) if (p >= ${min}) powers_${safeName}.push(p);
+                        if (!powers_${safeName}.length) throw new Error('No powers of 2 in range [${min}, ${max}]');
+                        vars['${safeName}'] = powers_${safeName}[Math.floor(rng() * powers_${safeName}.length)];
+                    `;
+                } else {
+                    // Regular int type
+                    return `vars['${safeName}'] = Math.floor(rng() * (${max} - ${min} + 1) + ${min});`;
+                }
             }
         },
         
@@ -102,6 +146,7 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
             const length = sanitizeName(mod.lengthVar);
             const minVar = sanitizeName(mod.minVar);
             const maxVar = sanitizeName(mod.maxVar);
+            const safeName = sanitizeName(mod.name);
             
             let code = `
                 const len = vars['${length}'];
@@ -111,30 +156,142 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
                 const arr = [];
             `;
             
-            if (mod.multivalType === 'distinct') {
+            if (mod.dataType === 'char') {
+                // Generate array of ASCII characters
                 code += `
-                    const range = max - min + 1;
-                    if (range < len) throw new Error('RandomArray: not enough distinct values');
-                    const used = new Set();
-                    while (arr.length < len) {
-                        const val = Math.floor(rng() * range) + min;
-                        if (!used.has(val)) {
-                            used.add(val);
-                            arr.push(val);
+                    if (min < 0 || max > 127) throw new Error('RandomArray: ASCII codes must be 0-127 for char type');
+                `;
+                if (mod.multivalType === 'distinct') {
+                    code += `
+                        const range = max - min + 1;
+                        if (range < len) throw new Error('RandomArray: not enough distinct ASCII characters');
+                        const used = new Set();
+                        while (arr.length < len) {
+                            const code = Math.floor(rng() * range) + min;
+                            if (!used.has(code)) {
+                                used.add(code);
+                                arr.push(String.fromCharCode(code));
+                            }
+                        }
+                    `;
+                } else {
+                    code += `
+                        for (let i = 0; i < len; i++) {
+                            const code = Math.floor(rng() * (max - min + 1)) + min;
+                            arr.push(String.fromCharCode(code));
+                        }
+                    `;
+                }
+            } else if (mod.dataType === 'double') {
+                // Generate array of floating point numbers
+                if (mod.multivalType === 'distinct') {
+                    code += `
+                        const used = new Set();
+                        let attempts = 0;
+                        while (arr.length < len && attempts < len * 100) {
+                            const val = rng() * (max - min) + min;
+                            const rounded = Math.round(val * 1000000) / 1000000; // 6 decimal precision
+                            if (!used.has(rounded)) {
+                                used.add(rounded);
+                                arr.push(rounded);
+                            }
+                            attempts++;
+                        }
+                        if (arr.length < len) throw new Error('RandomArray: could not generate enough distinct double values');
+                    `;
+                } else {
+                    code += `
+                        for (let i = 0; i < len; i++) {
+                            arr.push(rng() * (max - min) + min);
+                        }
+                    `;
+                }
+            } else if (mod.dataType === 'prime') {
+                code += `
+                    const isPrime_${safeName} = n => {
+                        if (n < 2) return false;
+                        for (let i = 2; i * i <= n; i++) if (n % i === 0) return false;
+                        return true;
+                    };
+                    const primes_${safeName} = [];
+                    for (let i = min; i <= max; i++) if (isPrime_${safeName}(i)) primes_${safeName}.push(i);
+                    if (!primes_${safeName}.length) throw new Error('RandomArray: No primes in range [' + min + ', ' + max + ']');
+                    
+                    if (${JSON.stringify(mod.multivalType)} === 'distinct') {
+                        if (primes_${safeName}.length < len) throw new Error('RandomArray: not enough distinct prime values');
+                        const used = new Set();
+                        while (arr.length < len) {
+                            const val = primes_${safeName}[Math.floor(rng() * primes_${safeName}.length)];
+                            if (!used.has(val)) {
+                                used.add(val);
+                                arr.push(val);
+                            }
+                        }
+                    } else {
+                        for (let i = 0; i < len; i++) {
+                            arr.push(primes_${safeName}[Math.floor(rng() * primes_${safeName}.length)]);
+                        }
+                    }
+                `;
+            } else if (mod.dataType === 'power of 2') {
+                code += `
+                    const powers_${safeName} = [];
+                    for (let p = 1; p <= max; p *= 2) if (p >= min) powers_${safeName}.push(p);
+                    if (!powers_${safeName}.length) throw new Error('RandomArray: No powers of 2 in range [' + min + ', ' + max + ']');
+                    
+                    if (${JSON.stringify(mod.multivalType)} === 'distinct') {
+                        if (powers_${safeName}.length < len) throw new Error('RandomArray: not enough distinct power of 2 values');
+                        const used = new Set();
+                        while (arr.length < len) {
+                            const val = powers_${safeName}[Math.floor(rng() * powers_${safeName}.length)];
+                            if (!used.has(val)) {
+                                used.add(val);
+                                arr.push(val);
+                            }
+                        }
+                    } else {
+                        for (let i = 0; i < len; i++) {
+                            arr.push(powers_${safeName}[Math.floor(rng() * powers_${safeName}.length)]);
                         }
                     }
                 `;
             } else {
-                const cast = mod.dataType === 'int' ? 'Math.floor' : '';
-                code += `
-                    for (let i = 0; i < len; i++) {
-                        arr.push(${cast}(rng() * (max - min + 1) + min));
-                    }
-                `;
+                // Regular int type
+                if (mod.multivalType === 'distinct') {
+                    code += `
+                        const range = max - min + 1;
+                        if (range < len) throw new Error('RandomArray: not enough distinct values');
+                        const used = new Set();
+                        while (arr.length < len) {
+                            const val = Math.floor(rng() * range) + min;
+                            if (!used.has(val)) {
+                                used.add(val);
+                                arr.push(val);
+                            }
+                        }
+                    `;
+                } else {
+                    code += `
+                        for (let i = 0; i < len; i++) {
+                            arr.push(Math.floor(rng() * (max - min + 1) + min));
+                        }
+                    `;
+                }
             }
             
-            if (mod.sortType === 'asc') code += 'arr.sort((a, b) => a - b);';
-            else if (mod.sortType === 'desc') code += 'arr.sort((a, b) => b - a);';
+            if (mod.sortType === 'asc') {
+                if (mod.dataType === 'char') {
+                    code += 'arr.sort();';
+                } else {
+                    code += 'arr.sort((a, b) => a - b);';
+                }
+            } else if (mod.sortType === 'desc') {
+                if (mod.dataType === 'char') {
+                    code += 'arr.sort().reverse();';
+                } else {
+                    code += 'arr.sort((a, b) => b - a);';
+                }
+            }
             
             return code + `return arr;`;
         },
@@ -583,11 +740,14 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
         }
     };
     
-    compileModule = mod => {
+    compileModule = (mod, moduleIndex = 0, totalModules = 1) => {
         if (!mod.visible) return '';
         
         const safeName = sanitizeName(mod.name);
-        const separator = mod.separator === 'newline' ? '\\n' : mod.separator === 'space' ? ' ' : '';
+        const isLast = moduleIndex === totalModules - 1;
+        const separator = isLast ? '' : (mod.separator === 'newline' ? '\\\\n' : 
+                                         mod.separator === 'space' ? ' ' : 
+                                         mod.separator === 'none' ? '' : '\\\\n');
         
         if (mod.type === 'Repeat') {
             const times = sanitizeName(mod.timesVar);
@@ -595,7 +755,7 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
             if (!visibleModules.length) return '';
             
             const moduleCode = visibleModules.map((m, idx) => {
-                const modCode = compileModule(m);
+                const modCode = compileModule(m, idx, visibleModules.length);
                 if (!modCode) return '';
                 
                 if (m.type === 'FixedVariable' || m.type === 'RandomVariable') {
@@ -624,11 +784,14 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
                                 return `formattedResults.push(String(vars['${sanitizeName(m.name)}']));`;
                             }
                         }).join('\n')}
-                        const itemSeparator = '${separator}';
-                        repeatResults.push(formattedResults.join(itemSeparator));
+                        repeatResults.push(formattedResults.join(' ')); // Always use space between items in a repeat iteration
                     }
-                    const repeatSeparator = '${mod.separator === 'newline' ? '\\n' : mod.separator === 'space' ? ' ' : ''}';
-                    outputs.push(repeatResults.join(repeatSeparator));
+                    const repeatSeparator = '${mod.separator === 'newline' ? '\\n' : mod.separator === 'space' ? ' ' : mod.separator === 'none' ? '' : '\\n'}';
+                    if (repeatSeparator === '') {
+                        outputs.push(repeatResults.join('') + '${separator}');
+                    } else {
+                        outputs.push(repeatResults.join(repeatSeparator) + '${separator}');
+                    }
                 }
             `;
         }
@@ -636,19 +799,23 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
         if (mod.type === 'FixedVariable' || mod.type === 'RandomVariable') {
             return `
                 ${compileFunctions[mod.type](mod)}
-                outputs.push(String(vars['${safeName}']));
+                outputs.push(String(vars['${safeName}']) + '${separator}');
             `;
         }
         
         return `
             outputs.push(formatOutput((()=> {
                 ${compileFunctions[mod.type](mod)}
-            })(), ${JSON.stringify(mod)}));
+            })(), ${JSON.stringify(mod)}) + '${separator}');
         `;
     };
     
     const visibleModules = modules.filter(m => m.visible);
     if (!visibleModules.length) return '';
+    
+    const compiledModules = visibleModules.map((mod, index) => {
+        return compileModule(mod, index, visibleModules.length);
+    });
     
     const jsSource = `
         const rng = mulberry32(${seed});
@@ -657,10 +824,9 @@ const generateTestFromModel = (dataModel, seed = Date.now()) => {
         
         const formatOutput = ${formatOutput.toString()};
         
-        ${visibleModules.map(compileModule).join('\n')}
+        ${compiledModules.join('\n')}
         
-        const separator = '${modules[0]?.separator === 'newline' ? '\\n' : modules[0]?.separator === 'space' ? ' ' : ''}';
-        return outputs.join(separator).replace(/\\\\n/g, '\\n');
+        return outputs.join('').replace(/\\\\n/g, '\\n');
     `;
     
     console.log('Generated JS source:', jsSource);
